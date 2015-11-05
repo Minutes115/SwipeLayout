@@ -4,12 +4,29 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.minutes.swipelayout.SwipeToRefreshLayout;
+
+import java.util.List;
+import java.util.Vector;
 
 public class MainActivity extends AppCompatActivity {
+
+    final static List<String> list = new Vector<>();
+    static {
+        for (int i = 0; i < 30; i++){
+            list.add("Test data " + i);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +43,41 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
+        RecyclerView mRecyclerView = (RecyclerView) findViewById(R.id.mRecyclerView);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView.setAdapter(new DemoAdapter());
+
+        SwipeToRefreshLayout swipeLayout = (SwipeToRefreshLayout) findViewById(R.id.swipeLayout);
+        swipeLayout.setMode(SwipeToRefreshLayout.MODE_PULL_DOWN_TO_REFRESH);
+
+    }
+
+    class DemoAdapter extends RecyclerView.Adapter<DemoViewHolder>{
+
+        @Override
+        public DemoViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(MainActivity.this).inflate(android.R.layout.test_list_item, parent, false);
+            return new DemoViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(DemoViewHolder holder, int position) {
+            holder.text1.setText(list.get(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return list.size();
+        }
+    }
+
+    class DemoViewHolder extends RecyclerView.ViewHolder{
+        final TextView text1;
+        public DemoViewHolder(View itemView) {
+            super(itemView);
+            text1 = (TextView) itemView.findViewById(android.R.id.text1);
+        }
     }
 
     @Override
