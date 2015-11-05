@@ -1,4 +1,4 @@
-package com.minutes.swipelayoutdemo;
+package com.minutes.swipelayout;
 
 import org.junit.Test;
 

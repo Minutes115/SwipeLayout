@@ -1,4 +1,4 @@
-package com.minutes.swipelayout;
+package com.minutes.swipelayoutdemo;
 
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
