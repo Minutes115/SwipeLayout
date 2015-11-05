@@ -218,12 +218,12 @@ public class SwipeToRefreshLayout extends FrameLayout {
             return false;
         }
         final int action = MotionEventCompat.getActionMasked(ev);
-        if (isRefreshing && action == MotionEvent.ACTION_MOVE && !touchableWhileRefreshing) {
+        if (isRefreshing && action == MotionEvent.ACTION_MOVE) {
             return true;
         }
         if (action == MotionEvent.ACTION_DOWN) {
             initialY = ev.getY();
-            return false;
+            return isRefreshing && touchableWhileRefreshing;
         }
         //在这里触发拉动事件,当没有在拉动的时候,如果是垂直拉动,并且距离大于指定的距离,设定为开始拉动,开始消费事件
         if (action == MotionEvent.ACTION_MOVE) {
@@ -270,9 +270,9 @@ public class SwipeToRefreshLayout extends FrameLayout {
                 isDragging = false;
                 float delta = event.getY() - initialY;
                 if (delta > 0) {
-                    isRefreshing = Math.abs(getScrollY()) >= header.maxDistance();
+                    isRefreshing = Math.abs(delta) >= header.maxDistance() * 1.3;
                 } else {
-                    isRefreshing = Math.abs(getScrollY()) >= footer.maxDistance();
+                    isRefreshing = Math.abs(delta) >= footer.maxDistance() * 1.3;
                 }
                 if (isRefreshing) {
                     startRefresh(delta);

@@ -13,6 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.minutes.swipelayout.SwipeToRefreshLayout;
 
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
         SwipeToRefreshLayout swipeLayout = (SwipeToRefreshLayout) findViewById(R.id.swipeLayout);
         swipeLayout.setMode(SwipeToRefreshLayout.MODE_PULL_DOWN_TO_REFRESH);
+        swipeLayout.setTouchableWhileRefreshing(true);
 
     }
 
@@ -72,11 +74,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class DemoViewHolder extends RecyclerView.ViewHolder{
+    class DemoViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         final TextView text1;
         public DemoViewHolder(View itemView) {
             super(itemView);
             text1 = (TextView) itemView.findViewById(android.R.id.text1);
+            text1.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View v) {
+            Toast.makeText(v.getContext(), text1.getText(), Toast.LENGTH_SHORT).show();
         }
     }
 

@@ -14,10 +14,7 @@ import android.view.animation.RotateAnimation;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
-import android.widget.Scroller;
 import android.widget.TextView;
-
-import timber.log.Timber;
 
 /**
  * User: LiangLong
@@ -41,7 +38,6 @@ public class MyHeader implements ILoadLayout {
     private Animation mRotateDownAnimation;
 
     private View mLoadView;
-    private Scroller mScroller;
 
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
@@ -104,10 +100,6 @@ public class MyHeader implements ILoadLayout {
         return bmp;
     }
 
-    private int getVisibleHeight(){
-        return Math.abs(mLoadView.getScrollY());
-    }
-
     @Override
     public View loadView(SwipeToRefreshLayout swipeToRefreshLayout) {
         return mLoadView;
@@ -115,7 +107,7 @@ public class MyHeader implements ILoadLayout {
 
     @Override
     public int maxDistance() {
-        return 300;
+        return 250;
     }
 
     @Override
@@ -161,8 +153,6 @@ public class MyHeader implements ILoadLayout {
             mRotateDownAnimation.setFillAfter(true);
             mRotateDownAnimation.setInterpolator(new LinearInterpolator());
 
-            mScroller = new Scroller(context);
-
             mLoadView = View.inflate(context, R.layout.layout_refresh_loading, null);
             arrow = (ImageView) mLoadView.findViewById(R.id.refresh_arrow);
             arrow.setImageBitmap(getArrowBitmap(true));
@@ -171,7 +161,8 @@ public class MyHeader implements ILoadLayout {
             progress = (ProgressBar) mLoadView.findViewById(R.id.refresh_loading);
             progress.setVisibility(View.GONE);
 
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, maxDistance());
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                                                                       maxDistance());
             lp.gravity = Gravity.TOP;
             swipeToRefreshLayout.addView(mLoadView, -1, lp);
         }
@@ -187,11 +178,7 @@ public class MyHeader implements ILoadLayout {
             arrow.clearAnimation();
             arrow.startAnimation(mRotateDownAnimation);
         }
-        Timber.tag("MyHeader");
-        Timber.e("onDragEvent" + offset + " " + mLoadView.getY());
-//        mScroller.forceFinished(true);
-//        mScroller.startScroll(0, 0, 0, (int) offset, 0);
-        swipeToRefreshLayout.scrollTo(0, getVisibleHeight() + (int) offset);
+        swipeToRefreshLayout.scrollTo(0, (int) offset);
     }
 
     @Override
@@ -202,19 +189,39 @@ public class MyHeader implements ILoadLayout {
         arrow.clearAnimation();
         arrow.startAnimation(mRotateUpAnimation);
 
-//        mScroller.forceFinished(true);
-//        mScroller.startScroll(0, 0, 0, (int) offset, 0);
-        swipeToRefreshLayout.scrollTo(0, (getVisibleHeight() + (int) offset));
+        swipeToRefreshLayout.scrollTo(0, (int) offset);
     }
 
     @Override
-    public void onRefreshing(SwipeToRefreshLayout swipeToRefreshLayout) {
+    public void onRefreshing(final SwipeToRefreshLayout strl) {
         text.setText(TEXT_REFRESHING);
         arrow.clearAnimation();
         arrow.setVisibility(View.GONE);
         progress.setVisibility(View.VISIBLE);
 
-        mScroller.forceFinished(true);
+        int height = strl.getTop();
+        final int delta = height - maxDistance();
+        final int d = (int) Math.max(Math.abs(delta / 500f), 1);
+        strl.post(new Runnable() {
+            @Override
+            public void run() {
+                if (delta > 0) {
+                    if (strl.getTop() > maxDistance()) {
+                        strl.scrollTo(0, d);
+                        strl.postDelayed(this, 15);
+                    } else {
+                        strl.removeCallbacks(this);
+                    }
+                } else {
+                    if (strl.getTop() < maxDistance()) {
+                        strl.scrollTo(0, -d);
+                        strl.postDelayed(this, 15);
+                    } else {
+                        strl.removeCallbacks(this);
+                    }
+                }
+            }
+        });
     }
 
     @Override
