@@ -25,7 +25,7 @@ import android.widget.TextView;
  * <p>Date         : 15/11/3.</p>
  * <p>Time         : 下午10:37.</p>
  */
-public class HeaderView extends LinearLayout implements IHeaderLayout {
+public class HeaderView extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
 
     public static final String TEXT_RELEASE_TO_LOAD_MORE = "松开立即加载";
     public static final String TEXT_PULL_TO_LOAD_MORE    = "上拉加载更多";
@@ -90,6 +90,8 @@ public class HeaderView extends LinearLayout implements IHeaderLayout {
         mRotateDownAnimation.setDuration(200);
         mRotateDownAnimation.setFillAfter(true);
         mRotateDownAnimation.setInterpolator(new LinearInterpolator());
+
+        setState(LoadingState.NORMAL);
     }
 
     /**
@@ -154,7 +156,6 @@ public class HeaderView extends LinearLayout implements IHeaderLayout {
         return bmp;
     }
 
-    @Override
     public void setState(int state) {
         if (this.state == state) {
             return;
@@ -211,7 +212,6 @@ public class HeaderView extends LinearLayout implements IHeaderLayout {
         this.state = state;
     }
 
-    @Override
     public void onDrag(float offset) {
 
     }
