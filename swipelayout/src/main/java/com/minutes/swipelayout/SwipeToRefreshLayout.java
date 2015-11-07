@@ -10,6 +10,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewTreeObserver;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.widget.AbsListView;
 import android.widget.FrameLayout;
 
@@ -19,10 +21,8 @@ import android.widget.FrameLayout;
  */
 public class SwipeToRefreshLayout extends FrameLayout {
 
-    private static final String TAG = "RefreshView";
+    private static final String TAG = "SwipeToRefreshLayout";
     private static final float FRICTION = 3.0f;        //手指在屏幕上的移动距离与拉动的比例
-    private static final int DURING = 500;        //手指在屏幕上的移动距离与拉动的比例
-
 
     public static final int MODE_NONE = 0;
     public static final int MODE_BOTH = 1;
@@ -49,7 +49,6 @@ public class SwipeToRefreshLayout extends FrameLayout {
      */
     private boolean isDragging;
     private boolean isRefreshing;
-    private boolean touchableWhileRefreshing;
 
     private SwipeToRefreshListener onRefreshListener;
 
@@ -58,7 +57,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
     }
 
     public void setHeader(ILoadLayout header) {
-        if (this.header != null){
+        if (this.header != null) {
             removeView(header.loadView(this));
         }
         this.header = header;
@@ -66,7 +65,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
     }
 
     public void setFooter(ILoadLayout footer) {
-        if (this.footer != null){
+        if (this.footer != null) {
             removeView(this.footer.loadView(this));
         }
         this.footer = footer;
@@ -77,22 +76,21 @@ public class SwipeToRefreshLayout extends FrameLayout {
         this.mode = mode;
     }
 
-    public void setTouchableWhileRefreshing(boolean touchableWhileRefreshing) {
-        this.touchableWhileRefreshing = touchableWhileRefreshing;
-    }
-
     public boolean isRefreshing() {
         return isRefreshing;
     }
 
-    public void setRefreshing(boolean refreshing) {
-        if (header != null){
-            if (refreshing) {
-                header.onRefreshing(this);
-            } else {
-                header.stopRefresh(this);
+    public void setRefreshing(final boolean refreshing) {
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (refreshing) {
+                    startRefresh(true);
+                } else {
+                    stopRefresh();
+                }
             }
-        }
+        }, 100);
     }
 
     public SwipeToRefreshLayout(Context context) {
@@ -111,19 +109,19 @@ public class SwipeToRefreshLayout extends FrameLayout {
     }
 
     private void init(Context context) {
-        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         if (header != null) {
             header.onAttach(this);
         }
         if (footer != null) {
             footer.onAttach(this);
         }
+        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
 
             @Override
             public void onGlobalLayout() {
                 getViewTreeObserver().removeGlobalOnLayoutListener(this);
-                Log.d(TAG, "TouchSlop : " + touchSlop + "  State Ready ? ");
+                Log.d(TAG, "TouchSlop : " + touchSlop + " getScrollY : " + getScrollY());
             }
         });
     }
@@ -132,10 +130,13 @@ public class SwipeToRefreshLayout extends FrameLayout {
         if (childView == null) {
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
-                if (!child.equals(header.loadView(this)) && !child.equals(footer.loadView(this))) {
-                    childView = child;
-                    break;
+                if (header != null && child.equals(header.loadView(this))) {
+                    continue;
                 }
+                if (footer != null && child.equals(footer.loadView(this))) {
+                    continue;
+                }
+                childView = child;
             }
         }
         return childView;
@@ -144,27 +145,36 @@ public class SwipeToRefreshLayout extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-            if (header != null) {
-                header.onLayout(this, changed, left, top, right, bottom);
-            }
-            if (footer != null) {
-                footer.onLayout(this, changed, left, top, right, bottom);
-            }
+        if (header != null) {
+            header.onLayout(this, changed, left, top, right, bottom);
+        }
+        if (footer != null) {
+            footer.onLayout(this, changed, left, top, right, bottom);
+        }
     }
 
 
     /**
-     * @return 设置是否允许拉动
+     * @return 判断设置是否允许拉动
      */
     private boolean isEnablePulling() {
         return mode != MODE_NONE;
     }
 
     /**
-     * @return 子视图是否可以下拉, 这里的下拉是指是否已经滑到顶端了
+     * @return 当设置了下拉刷新时,判断子View内容是否已经到头
      */
     private boolean canChildPullDown() {
+        if (header == null) {
+            return false;
+        }
+        if (mode != MODE_BOTH && mode != MODE_PULL_DOWN_TO_REFRESH) {
+            return false;
+        }
         View child = getChildView();
+        if (child == null){
+            return false;
+        }
         if (child instanceof AbsListView) {
             AbsListView abs = (AbsListView) child;
             int count = abs.getAdapter().getCount();
@@ -177,7 +187,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
             }
         } else {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-                return child.getScaleY() > 0;
+                return child.getScrollY() > 0;
             } else {
                 return !ViewCompat.canScrollVertically(child, -1);
             }
@@ -186,10 +196,19 @@ public class SwipeToRefreshLayout extends FrameLayout {
     }
 
     /**
-     * @return 子视图是否可以上拉, 这里的上拉是指是否已经滑到底端了
+     * @return 当设置了上拉加载时,判断子View内容是否已经到底
      */
     private boolean canChildPullUp() {
+        if (footer == null) {
+            return false;
+        }
+        if (mode != MODE_BOTH && mode != MODE_PULL_UP_TO_REFRESH) {
+            return false;
+        }
         View child = getChildView();
+        if (child == null){
+            return false;
+        }
         if (child instanceof AbsListView) {
             AbsListView av = (AbsListView) child;
             int count = av.getAdapter().getCount();
@@ -209,56 +228,47 @@ public class SwipeToRefreshLayout extends FrameLayout {
 
 
     /**
+     * 拦截触摸事件
      * @param ev 触摸事件
-     * @return false 证明事件继续往子view传递调用子view onTouchEvent,true 表示不往下传递 直接调用该容器的onTouchEvent
+     * @return false 往子view传递调事件,用子view onTouchEvent,true 不往下传递 直接调用该容器的onTouchEvent
      */
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if (!isEnablePulling() || (!canChildPullDown() && !canChildPullUp())) {
+        if (!isEnablePulling()) {
             return false;
         }
-        final int action = MotionEventCompat.getActionMasked(ev);
-        if (isRefreshing && action == MotionEvent.ACTION_MOVE) {
-            return true;
-        }
+        int action = MotionEventCompat.getActionMasked(ev);
         if (action == MotionEvent.ACTION_DOWN) {
             initialY = ev.getY();
-            return isRefreshing && touchableWhileRefreshing;
-        }
-        //在这里触发拉动事件,当没有在拉动的时候,如果是垂直拉动,并且距离大于指定的距离,设定为开始拉动,开始消费事件
-        if (action == MotionEvent.ACTION_MOVE) {
-            float delta = ev.getY() - initialY;
-            if (delta > 0) {//手指下拉
-                if (header == null || !canChildPullDown()
-                    || (mode != MODE_BOTH && mode != MODE_PULL_DOWN_TO_REFRESH)) {
-                    return false;
-                }
-            }
-            if (delta < 0) {//手指上拉
-                if (footer == null || !canChildPullUp()
-                    || (mode != MODE_BOTH && mode != MODE_PULL_UP_TO_REFRESH)) {
-                    return false;
-                }
-            }
-            if (!isDragging && Math.abs(delta) >= touchSlop) {
-                isDragging = true;
-            }
-            return isDragging;
+            isDragging = false;
         }
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             isDragging = false;
-            return isRefreshing;
         }
-        return super.onInterceptTouchEvent(ev);
+        //在这里触发拉动事件,当没有在拉动的时候,如果是垂直拉动,并且距离大于指定的距离,设定为开始拉动,开始消费事件
+        if (action == MotionEvent.ACTION_MOVE) {
+            float delta = initialY - ev.getY();
+            //move事件只拦截符合滑动标准的事件,不满足的(比如轻微晃动的点击,不做处理)
+            if (Math.abs(delta) >= touchSlop) {
+                if (isRefreshing) {
+                    return true;
+                }
+                if (!isDragging){
+                    isDragging = (delta < 0 && canChildPullDown())
+                        || (delta > 0 &&  canChildPullUp());
+                }
+            }
+        }
+        return isDragging;
     }
 
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        final int action = MotionEventCompat.getActionMasked(event);
-        if (action == MotionEvent.ACTION_DOWN) {
-            isDragging = false;
+        if (isRefreshing) {
+            return true;
         }
+        int action = MotionEventCompat.getActionMasked(event);
         if (action == MotionEvent.ACTION_MOVE) {
             if (isDragging) {
                 int distance = (int) ((initialY - event.getY()) / FRICTION);
@@ -268,14 +278,10 @@ public class SwipeToRefreshLayout extends FrameLayout {
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (isDragging) {
                 isDragging = false;
-                float delta = event.getY() - initialY;
-                if (delta > 0) {
-                    isRefreshing = Math.abs(delta) >= header.maxDistance() * 1.3;
-                } else {
-                    isRefreshing = Math.abs(delta) >= footer.maxDistance() * 1.3;
-                }
-                if (isRefreshing) {
-                    startRefresh(delta);
+                float delta = initialY - event.getY();
+                //没有设置回调的话就回弹
+                if (canFireOnRefreshEvent(delta / FRICTION)) {
+                    startRefresh(delta < 0);
                 } else {
                     stopRefresh();
                 }
@@ -289,14 +295,14 @@ public class SwipeToRefreshLayout extends FrameLayout {
      */
     private void handleDragEvent(int distance) {
         int d = Math.abs(distance);
-        if (distance < 0 && header != null) {
+        if (header != null && distance < 0) {
             if (d < header.maxDistance()) {
                 header.onDragEvent(this, distance);
             } else {
                 header.onOverDragging(this, distance);
             }
         }
-        if (distance > 0 && footer != null) {
+        if (footer != null && distance > 0) {
             if (d < footer.maxDistance()) {
                 footer.onDragEvent(this, distance);
             } else {
@@ -307,17 +313,41 @@ public class SwipeToRefreshLayout extends FrameLayout {
 
 
     /**
+     * 根据移动的距离判断是否可以触发释放刷新事件
+     *
+     * @param dragDistance 带方向的距离
+     * @return
+     */
+    private boolean canFireOnRefreshEvent(float dragDistance) {
+        float rate = 1f;
+        if ( header != null && dragDistance < 0) {
+            return Math.abs(dragDistance) >= header.maxDistance() * rate;
+        }
+        if (footer != null && dragDistance > 0) {
+            return Math.abs(dragDistance) >= footer.maxDistance() * rate;
+        }
+        return false;
+    }
+
+
+    /**
      * 切换到下拉刷新状态
      *
-     * @param direction 方向指示,如果为负数,是上拉状态,如果是正数,是下拉状态
+     * @param isPullingDown 是否是下拉刷新
      */
-    private void startRefresh(float direction) {
-        boolean isPullDown = direction > 0;
-        if (isPullDown && header != null) {
+    private void startRefresh(boolean isPullingDown) {
+        isRefreshing = true;
+        if (header != null && isPullingDown ) {
             header.onRefreshing(this);
+            if (onRefreshListener != null) {
+                onRefreshListener.onPull2Refresh(this);
+            }
         }
-        if (!isPullDown && footer != null) {
+        if (footer != null && !isPullingDown) {
             footer.onRefreshing(this);
+            if (onRefreshListener != null) {
+                onRefreshListener.onLoadMore(this);
+            }
         }
     }
 
@@ -331,6 +361,52 @@ public class SwipeToRefreshLayout extends FrameLayout {
         }
         if (canChildPullUp() && footer != null) {
             footer.stopRefresh(this);
+        }
+    }
+
+    /**
+     * 重复绘制完成滑动操作类
+     */
+    public static final class SmoothScrollToRunnable implements Runnable {
+        private Interpolator interpolator;
+        private View target;
+        private int fromY;
+        private int toY;
+        private int currentY;
+        private long mStartTime = -1;
+        private boolean isContinue = true;
+
+        public SmoothScrollToRunnable(View target, int fromY, int toY, Interpolator interpolator) {
+            this.target = target;
+            this.currentY = toY - 1;
+            this.fromY = fromY;
+            this.toY = toY;
+            if (interpolator == null){
+                interpolator = new DecelerateInterpolator();
+            }
+            this.interpolator = interpolator;
+        }
+
+        @Override
+        public void run() {
+            if (mStartTime == -1) {
+                mStartTime = System.currentTimeMillis();
+            } else {
+                long normalizedTime = (1000 * (System.currentTimeMillis() - mStartTime)) / 200;
+                normalizedTime = Math.max(Math.min(normalizedTime, 1000), 0);
+
+                int deltaY = Math.round((fromY - toY) * interpolator.getInterpolation(normalizedTime / 1000f));
+                currentY = fromY - deltaY;
+                target.scrollTo(0, currentY);
+            }
+            if (isContinue && currentY != toY) {
+                target.postDelayed(this, 16);
+            }
+        }
+
+        public void stop() {
+            isContinue = false;
+            target.removeCallbacks(this);
         }
     }
 

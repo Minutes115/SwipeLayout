@@ -9,6 +9,8 @@ import android.graphics.Path;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.Animation;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.FrameLayout;
@@ -38,6 +40,8 @@ public class MyHeader implements ILoadLayout {
     private Animation mRotateDownAnimation;
 
     private View mLoadView;
+    private SwipeToRefreshLayout.SmoothScrollToRunnable runnable;
+    private Interpolator  interpolator = new DecelerateInterpolator();
 
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
@@ -107,7 +111,7 @@ public class MyHeader implements ILoadLayout {
 
     @Override
     public int maxDistance() {
-        return 250;
+        return 220;
     }
 
     @Override
@@ -174,7 +178,7 @@ public class MyHeader implements ILoadLayout {
         text.setText(TEXT_PULL_TO_REFRESH);
         progress.setVisibility(View.GONE);
         arrow.setVisibility(View.VISIBLE);
-        if (arrow.getAnimation() == mRotateUpAnimation) {
+        if (arrow.getAnimation() != mRotateDownAnimation) {
             arrow.clearAnimation();
             arrow.startAnimation(mRotateDownAnimation);
         }
@@ -186,9 +190,10 @@ public class MyHeader implements ILoadLayout {
         text.setText(TEXT_RELEASE_TO_REFRESH);
         progress.setVisibility(View.GONE);
         arrow.setVisibility(View.VISIBLE);
-        arrow.clearAnimation();
-        arrow.startAnimation(mRotateUpAnimation);
-
+        if (arrow.getAnimation() != mRotateUpAnimation) {
+            arrow.clearAnimation();
+            arrow.startAnimation(mRotateUpAnimation);
+        }
         swipeToRefreshLayout.scrollTo(0, (int) offset);
     }
 
@@ -199,36 +204,30 @@ public class MyHeader implements ILoadLayout {
         arrow.setVisibility(View.GONE);
         progress.setVisibility(View.VISIBLE);
 
-        int height = strl.getTop();
-        final int delta = height - maxDistance();
-        final int d = (int) Math.max(Math.abs(delta / 500f), 1);
-        strl.post(new Runnable() {
-            @Override
-            public void run() {
-                if (delta > 0) {
-                    if (strl.getTop() > maxDistance()) {
-                        strl.scrollTo(0, d);
-                        strl.postDelayed(this, 15);
-                    } else {
-                        strl.removeCallbacks(this);
-                    }
-                } else {
-                    if (strl.getTop() < maxDistance()) {
-                        strl.scrollTo(0, -d);
-                        strl.postDelayed(this, 15);
-                    } else {
-                        strl.removeCallbacks(this);
-                    }
-                }
-            }
-        });
+        if (runnable != null){
+            runnable.stop();
+        }
+        runnable = new SwipeToRefreshLayout.SmoothScrollToRunnable(strl,
+                                                                   strl.getScrollY(),
+                                                                   -maxDistance(),
+                                                                   interpolator);
+        runnable.run();
     }
 
     @Override
-    public void stopRefresh(SwipeToRefreshLayout swipeToRefreshLayout) {
+    public void stopRefresh(SwipeToRefreshLayout strl) {
         arrow.clearAnimation();
         arrow.setVisibility(View.GONE);
         progress.setVisibility(View.GONE);
+
+        if (runnable != null) {
+            runnable.stop();
+        }
+        runnable = new SwipeToRefreshLayout.SmoothScrollToRunnable(strl,
+                                                                   strl.getScrollY(),
+                                                                   0,
+                                                                   interpolator);
+        runnable.run();
     }
 
 }
