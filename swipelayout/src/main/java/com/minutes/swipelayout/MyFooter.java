@@ -23,11 +23,9 @@ import android.widget.TextView;
  * Note: com.minutes.library.widget.swipe2refresh
  */
 public class MyFooter implements ILoadLayout {
-    public static final String TEXT_RELEASE_TO_LOAD_MORE = "松开立即加载";
-    public static final String TEXT_PULL_TO_LOAD_MORE = "上拉加载更多";
-    public static final String TEXT_REFRESHING = "正在刷新";
-    public static final String TEXT_PULL_TO_REFRESH = "下拉可以刷新";
-    public static final String TEXT_RELEASE_TO_REFRESH = "松开立即刷新";
+    public static final String TEXT_RELEASE_TO_LOAD_MORE    = "松开立即加载";
+    public static final String TEXT_PULL_TO_LOAD_MORE       = "上拉加载更多";
+    public static final String TEXT_REFRESHING              = "正在刷新";
 
     private TextView text;
     private ImageView arrow;
@@ -42,10 +40,10 @@ public class MyFooter implements ILoadLayout {
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
      */
-    private Bitmap getArrowBitmap(boolean isHeader) {
+    private Bitmap getArrowBitmap() {
         int    width       = (int) (60 * .6);
         int    height      = (int) (60 * .6);
-        Bitmap bmp         = Bitmap.createBitmap(width, width, Bitmap.Config.ARGB_8888);
+        Bitmap bmp         = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas      = new Canvas(bmp);
         Path   path        = new Path();
         float  arrowHeight = (float) (width * .3);
@@ -54,45 +52,24 @@ public class MyFooter implements ILoadLayout {
         float  barPad      = (float) (height * .52);
         Paint  paint       = new Paint();
         paint.setAntiAlias(true);
-        if (isHeader) {
-            path.moveTo(arrowPoint + arrowWidth / 2, height);
-            path.lineTo(arrowPoint + arrowWidth, height - arrowHeight);
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), height - arrowHeight);
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), height - barPad);
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), height - barPad);
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), height - arrowHeight);
-            path.lineTo(arrowPoint, height - arrowHeight);
-            path.close();
-            path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .20));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .20));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .45));
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .45));
-            path.close();
-            path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .55));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .55));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .73));
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .73));
-            path.close();
-        } else {
-            path.moveTo(arrowPoint + arrowWidth / 2, 0);
-            path.lineTo(arrowPoint + arrowWidth, arrowHeight);
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), arrowHeight);
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), height - barPad);
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), height - barPad);
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), arrowHeight);
-            path.lineTo(arrowPoint, arrowHeight);
-            path.close();
-            path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .10));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .10));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .35));
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .35));
-            path.close();
-            path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .45));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .45));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .63));
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .63));
-            path.close();
-        }
+        path.moveTo(arrowPoint + arrowWidth / 2, 0);
+        path.lineTo(arrowPoint + arrowWidth, arrowHeight);
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), arrowHeight);
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), height - barPad);
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), height - barPad);
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), arrowHeight);
+        path.lineTo(arrowPoint, arrowHeight);
+        path.close();
+        path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .10));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .10));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .35));
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .35));
+        path.close();
+        path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .45));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .45));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .63));
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .63));
+        path.close();
         paint.setStyle(Paint.Style.STROKE);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.parseColor("#ffadada9"));
@@ -137,8 +114,9 @@ public class MyFooter implements ILoadLayout {
             mRotateDownAnimation.setInterpolator(new LinearInterpolator());
 
             mLoadView = View.inflate(context, R.layout.layout_refresh_loading, null);
+            Bitmap bmArrow = getArrowBitmap();
             arrow = (ImageView) mLoadView.findViewById(R.id.refresh_arrow);
-            arrow.setImageBitmap(getArrowBitmap(false));
+            arrow.setImageBitmap(bmArrow);
             text = (TextView) mLoadView.findViewById(R.id.refresh_msg);
             text.setText(TEXT_PULL_TO_LOAD_MORE);
             progress = (ProgressBar) mLoadView.findViewById(R.id.refresh_loading);
