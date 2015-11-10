@@ -10,8 +10,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewTreeObserver;
-import android.view.animation.DecelerateInterpolator;
-import android.view.animation.Interpolator;
 import android.widget.AbsListView;
 import android.widget.FrameLayout;
 
@@ -361,52 +359,6 @@ public class SwipeToRefreshLayout extends FrameLayout {
         }
         if (canChildPullUp() && footer != null) {
             footer.stopRefresh(this);
-        }
-    }
-
-    /**
-     * 重复绘制完成滑动操作类
-     */
-    public static final class SmoothScrollToRunnable implements Runnable {
-        private Interpolator interpolator;
-        private View target;
-        private int fromY;
-        private int toY;
-        private int currentY;
-        private long mStartTime = -1;
-        private boolean isContinue = true;
-
-        public SmoothScrollToRunnable(View target, int fromY, int toY, Interpolator interpolator) {
-            this.target = target;
-            this.currentY = toY - 1;
-            this.fromY = fromY;
-            this.toY = toY;
-            if (interpolator == null){
-                interpolator = new DecelerateInterpolator();
-            }
-            this.interpolator = interpolator;
-        }
-
-        @Override
-        public void run() {
-            if (mStartTime == -1) {
-                mStartTime = System.currentTimeMillis();
-            } else {
-                long normalizedTime = (1000 * (System.currentTimeMillis() - mStartTime)) / 200;
-                normalizedTime = Math.max(Math.min(normalizedTime, 1000), 0);
-
-                int deltaY = Math.round((fromY - toY) * interpolator.getInterpolation(normalizedTime / 1000f));
-                currentY = fromY - deltaY;
-                target.scrollTo(0, currentY);
-            }
-            if (isContinue && currentY != toY) {
-                target.postDelayed(this, 16);
-            }
-        }
-
-        public void stop() {
-            isContinue = false;
-            target.removeCallbacks(this);
         }
     }
 

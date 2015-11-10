@@ -25,7 +25,6 @@ import android.widget.TextView;
  * Note: com.minutes.library.widget.swipe2refresh
  */
 public class MyHeader implements ILoadLayout {
-    public static final int    DURING   = 500;
     public static final String TEXT_RELEASE_TO_LOAD_MORE = "松开立即加载";
     public static final String TEXT_PULL_TO_LOAD_MORE = "上拉加载更多";
     public static final String TEXT_REFRESHING = "正在刷新";
@@ -40,8 +39,8 @@ public class MyHeader implements ILoadLayout {
     private Animation mRotateDownAnimation;
 
     private View mLoadView;
-    private SwipeToRefreshLayout.SmoothScrollToRunnable runnable;
-    private Interpolator  interpolator = new DecelerateInterpolator();
+    private SmoothScrollHelper runnable;
+    private Interpolator interpolator = new DecelerateInterpolator();
 
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
@@ -121,7 +120,7 @@ public class MyHeader implements ILoadLayout {
                          int top,
                          int right,
                          int bottom) {
-        if (mLoadView != null){
+        if (mLoadView != null) {
             mLoadView.bringToFront();
             mLoadView.layout(
                 mLoadView.getLeft(),
@@ -204,14 +203,14 @@ public class MyHeader implements ILoadLayout {
         arrow.setVisibility(View.GONE);
         progress.setVisibility(View.VISIBLE);
 
-        if (runnable != null){
+        if (runnable != null) {
             runnable.stop();
         }
-        runnable = new SwipeToRefreshLayout.SmoothScrollToRunnable(strl,
-                                                                   strl.getScrollY(),
-                                                                   -maxDistance(),
-                                                                   interpolator);
-        runnable.run();
+        runnable = new SmoothScrollHelper(strl,
+                                          strl.getScrollY(),
+                                          -maxDistance(),
+                                          interpolator);
+        strl.post(runnable);
     }
 
     @Override
@@ -223,11 +222,11 @@ public class MyHeader implements ILoadLayout {
         if (runnable != null) {
             runnable.stop();
         }
-        runnable = new SwipeToRefreshLayout.SmoothScrollToRunnable(strl,
-                                                                   strl.getScrollY(),
-                                                                   0,
-                                                                   interpolator);
-        runnable.run();
+        runnable = new SmoothScrollHelper(strl,
+                                          strl.getScrollY(),
+                                          0,
+                                          interpolator);
+        strl.post(runnable);
     }
 
 }

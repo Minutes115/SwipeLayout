@@ -16,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.minutes.swipelayout.SwipeToRefreshLayout;
+import com.minutes.swipelayout.SwipeToRefreshListener;
 
 import java.util.List;
 import java.util.Vector;
@@ -50,8 +51,35 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.setAdapter(new DemoAdapter());
 
         SwipeToRefreshLayout swipeLayout = (SwipeToRefreshLayout) findViewById(R.id.swipeLayout);
-        swipeLayout.setMode(SwipeToRefreshLayout.MODE_PULL_DOWN_TO_REFRESH);
-        swipeLayout.setTouchableWhileRefreshing(true);
+        swipeLayout.setMode(SwipeToRefreshLayout.MODE_BOTH);
+        swipeLayout.setOnRefreshListener(new SwipeToRefreshListener() {
+
+            @Override
+            public void onLoadMore(final SwipeToRefreshLayout layout) {
+                layout.postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        layout.setRefreshing(false);
+                    }
+
+                }, 2000);
+            }
+
+            @Override
+            public void onPull2Refresh(final SwipeToRefreshLayout layout) {
+                layout.postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        layout.setRefreshing(false);
+                    }
+
+                }, 2000);
+            }
+
+        });
+        swipeLayout.setRefreshing(true);
 
     }
 
