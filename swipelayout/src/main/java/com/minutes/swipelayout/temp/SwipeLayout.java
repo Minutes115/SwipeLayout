@@ -25,11 +25,16 @@ import android.widget.Scroller;
  */
 public class SwipeLayout extends ViewGroup{
     private static final float FRICTION = 3.0f;        //手指在屏幕上的移动距离与拉动的比例
+    private static final int MAX_OFFSET_ANIMATION_DURATION = 700;
 
     private static final int PULL_DIRECTION_NON  = 0;
     private static final int PULL_DIRECTION_UP   = 1;
     private static final int PULL_DIRECTION_DOWN = 2;
+    private static final int STATUS_INIT = 0;
+    private static final int STATUS_REFRESHING = 1;
+    private static final int STATUS_COMPLETE = 2;
     private int mDirection = PULL_DIRECTION_NON;
+    private int mStatus    = STATUS_INIT;
 
     private View mContentView;
     private View mHeaderView;
@@ -159,12 +164,18 @@ public class SwipeLayout extends ViewGroup{
     }
 
     @Override protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        log("onLayout == offset : " + mScrollerHelper.getCurrOffsetY());
+
         int paddingLeft = getPaddingLeft();
         int paddingTop = getPaddingTop();
+        int offset = mScrollerHelper.getCurrOffsetY();
         if (mContentView != null){
             MarginLayoutParams lp = (MarginLayoutParams) mContentView.getLayoutParams();
+            //is font mode
+            boolean isFont = mScrollMode == ScrollMode.SCROLL_FONT;
+
             final int left = paddingLeft + lp.leftMargin;
-            final int top = paddingTop + lp.topMargin + mScrollerHelper.getCurrOffsetY();
+            final int top = paddingTop + lp.topMargin + (isFont ? 0 : offset);
             final int right = left + mContentView.getMeasuredWidth();
             final int bottom = top + mContentView.getMeasuredHeight();
             mScrollerHelper.setContentOnLayoutRect(left, top, right, bottom);
@@ -173,11 +184,12 @@ public class SwipeLayout extends ViewGroup{
 
         if (mHeaderView != null) {
             MarginLayoutParams lp = (MarginLayoutParams) mHeaderView.getLayoutParams();
-            //is follow mode
-            boolean isScrollFollow = (mScrollMode == ScrollMode.SCROLL_FOLLOW);
+            //is follow / font mode
+            boolean isScrollFollow = (mScrollMode == ScrollMode.SCROLL_FOLLOW
+                    || mScrollMode == ScrollMode.SCROLL_FONT);
 
             final int left = paddingLeft + lp.leftMargin;
-            final int top = paddingTop + lp.topMargin + mScrollerHelper.getCurrOffsetY() -
+            final int top = paddingTop + lp.topMargin + offset -
                     (isScrollFollow ? mHeaderHeight : 0);
             final int right = left + mHeaderView.getMeasuredWidth();
             final int bottom = top + mHeaderView.getMeasuredHeight();
@@ -187,11 +199,12 @@ public class SwipeLayout extends ViewGroup{
 
         if (mFooterView != null){
             MarginLayoutParams lp = (MarginLayoutParams) mFooterView.getLayoutParams();
-            //is follow mode
-            boolean isScrollFollow = (mScrollMode == ScrollMode.SCROLL_FOLLOW);
+            //is follow / font mode
+            boolean isScrollFollow = (mScrollMode == ScrollMode.SCROLL_FOLLOW
+                    || mScrollMode == ScrollMode.SCROLL_FONT);
 
             final int left = paddingLeft + lp.leftMargin;
-            final int top = paddingTop + lp.topMargin + mScrollerHelper.getCurrOffsetY() -
+            final int top = paddingTop + lp.topMargin + offset -
                     (isScrollFollow ? mContentHeight : 0);
             final int right = left + mFooterView.getMeasuredWidth();
             final int bottom = top + mFooterView.getMeasuredHeight();
@@ -201,82 +214,96 @@ public class SwipeLayout extends ViewGroup{
     }
 
     @Override public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if (isRefreshing){
-            return true;
-        }
-        if (!canChildPullDown() && !canChildPullUp()){
+//        if (isRefreshing){
+//            return super.onInterceptTouchEvent(ev);
+//        }
+        if (!isEnabled() || (!canChildPullDown() && !canChildPullUp())){
             return super.onInterceptTouchEvent(ev);
         }
         final int action = MotionEventCompat.getActionMasked(ev);
         switch (action){
             case MotionEvent.ACTION_DOWN:{
+                mStatus = STATUS_INIT;
                 isDragging = false;
                 mScrollerHelper.setInitialY(ev.getY());
-                mDirection = PULL_DIRECTION_NON;
-                mScroller.interceptScroll();
             } break;
             case MotionEvent.ACTION_MOVE:{
                 float delta = ev.getY() - mScrollerHelper.getInitialY();
-                if (delta > 0) {//手指下拉
-                    if (!canChildPullDown() || mHeaderView == null) {
-                        log("MotionEvent.ACTION_MOVE --- can not pull down!");
-                        return false;
-                    } else {
-                        mDirection = PULL_DIRECTION_DOWN;
+                boolean isMove = Math.abs(delta) >= touchSlop;
+                if (isMove){
+                    if (delta > 0) {//手指下拉
+                        if (!canChildPullDown() || mHeaderView == null) {
+                            log("MotionEvent.ACTION_MOVE --- can not pull down!");
+                            return false;
+                        } else {
+                            mDirection = PULL_DIRECTION_DOWN;
+                        }
+                    }
+                    if (delta < 0) {//手指上拉
+                        if (!canChildPullUp() || mFooterView == null) {
+                            log("MotionEvent.ACTION_MOVE --- can not pull up!");
+                            return false;
+                        } else {
+                            mDirection = PULL_DIRECTION_UP;
+                        }
+                    }
+                    if (!isDragging){
+                        mScroller.interceptScroll();
+                        isDragging = true;
                     }
                 }
-                if (delta < 0) {//手指上拉
-                    if (!canChildPullUp() || mFooterView == null) {
-                        log("MotionEvent.ACTION_MOVE --- can not pull up!");
-                        return false;
-                    } else {
-                        mDirection = PULL_DIRECTION_UP;
-                    }
-                }
-                if (!isDragging && Math.abs(delta) >= touchSlop) {
-                    isDragging = true;
-                }
+
             } break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:{
                 isDragging = false;
+                release();
             } break;
         }
         return isDragging;
     }
 
     @Override public boolean onTouchEvent(MotionEvent event) {
+        if (!isDragging){
+            return super.onTouchEvent(event);
+        }
+
         final int action = MotionEventCompat.getActionMasked(event);
         switch (action){
             case MotionEvent.ACTION_DOWN:{
                 isDragging = false;
             } break;
             case MotionEvent.ACTION_MOVE:{
-                if (isDragging) {
-                    mScrollerHelper.setCurrY(event.getY());
-                    switch (mScrollMode){
-                        case ScrollMode.SCROLL_FOLLOW:
-                            contentScrollY(mScrollerHelper.getCurrOffsetY());
-                            headerScrollY(mScrollerHelper.getCurrOffsetY());
-                            break;
-                        case ScrollMode.SCROLL_BACK:
-                            contentScrollY(mScrollerHelper.getCurrOffsetY());
-                            break;
-                        case ScrollMode.SCROLL_FONT:
-                            headerScrollY(mScrollerHelper.getCurrOffsetY());
-                            break;
-                    }
+                mScrollerHelper.setCurrY(event.getY());
+                float delta = event.getY() - mScrollerHelper.getInitialY();
+                if (delta < 0 && mDirection == PULL_DIRECTION_DOWN){
+                    return false;
                 }
+                if (delta > 0 && mDirection == PULL_DIRECTION_UP){
+                    return false;
+                }
+
+                switch (mScrollMode) {
+                    case ScrollMode.SCROLL_FOLLOW:
+                        contentScrollY(mScrollerHelper.getCurrOffsetY());
+                        headerScrollY(mScrollerHelper.getCurrOffsetY());
+                        break;
+                    case ScrollMode.SCROLL_BACK:
+                        contentScrollY(mScrollerHelper.getCurrOffsetY());
+                        break;
+                    case ScrollMode.SCROLL_FONT:
+                        headerScrollY(mScrollerHelper.getCurrOffsetY());
+                        break;
+                }
+
             } break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:{
-                if (isDragging) {
-                    isDragging = false;
-                    release();
-                }
+                isDragging = false;
+                release();
             } break;
         }
-        return super.onTouchEvent(event);
+        return true;
     }
 
     private ILoadLayout ILoadLayout(View view){
@@ -295,8 +322,9 @@ public class SwipeLayout extends ViewGroup{
     }
 
     private void contentScrollY(int offset){
-        if (mContentView != null){
+        if (mContentView != null) {
             mContentView.offsetTopAndBottom(offset);
+            invalidate();
         }
     }
 
@@ -304,6 +332,7 @@ public class SwipeLayout extends ViewGroup{
         if (mHeaderView != null){
             mHeaderView.offsetTopAndBottom(offset);
             ILoadLayout(mHeaderView).pullOffset(this, offset, mScrollerHelper.getOffsetY());
+            invalidate();
         }
     }
 
@@ -311,10 +340,20 @@ public class SwipeLayout extends ViewGroup{
         if (mFooterView != null){
             mFooterView.offsetTopAndBottom(offset);
             ILoadLayout(mFooterView).pullOffset(this, offset, mScrollerHelper.getOffsetY());
+            invalidate();
         }
     }
 
     private int currContentViewOffset(){
+        if (mScrollMode == ScrollMode.SCROLL_FONT){
+            if (mDirection == PULL_DIRECTION_DOWN){
+                return Math.abs(mHeaderView.getTop() - mScrollerHelper.getHeaderOnLayoutRect().top);
+            } else if (mDirection == PULL_DIRECTION_UP){
+                return Math.abs(mFooterView.getTop() - mScrollerHelper.getFooterOnLayoutRect().top);
+            } else {
+                return mScrollerHelper.getOffsetY();
+            }
+        }
         return Math.abs(mContentView.getTop()) - mScrollerHelper.getContentOnLayoutRect().top;
     }
 
@@ -327,7 +366,7 @@ public class SwipeLayout extends ViewGroup{
                 offset = -offset;
             }
 
-            mScroller.startScroll(offset, 1000, new ScrollListener() {
+            mScroller.startScroll(offset, MAX_OFFSET_ANIMATION_DURATION, new ScrollListener() {
                 @Override
                 public void finish() {
                     if (mDirection == PULL_DIRECTION_DOWN){
@@ -362,7 +401,7 @@ public class SwipeLayout extends ViewGroup{
         mDirection = PULL_DIRECTION_DOWN;
         final ILoadLayout loadLayout = ILoadLayout(mHeaderView);
         int refreshHeight = loadLayout.refreshHeight();
-        mScroller.startScroll(refreshHeight, 1000, new ScrollListener() {
+        mScroller.startScroll(refreshHeight, MAX_OFFSET_ANIMATION_DURATION, new ScrollListener() {
             @Override
             public void finish() {
                 isRefreshing = true;
@@ -387,11 +426,10 @@ public class SwipeLayout extends ViewGroup{
             offset = -offset;
         }
 
-        mScroller.startScroll(offset, 1000, new ScrollListener() {
+        mScroller.startScroll(offset, MAX_OFFSET_ANIMATION_DURATION, new ScrollListener() {
             @Override
             public void finish() {
                 loadLayout.completeRefresh(SwipeLayout.this);
-                mDirection = PULL_DIRECTION_NON;
                 isRefreshing = false;
             }
         });

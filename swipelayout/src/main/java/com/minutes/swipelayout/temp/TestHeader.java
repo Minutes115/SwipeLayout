@@ -250,16 +250,16 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
             public void run() {
                parent.setRefresh(false);
             }
-        }, 3000);
+        }, 2000);
     }
 
     @Override
     public void pullOffset(SwipeLayout parent, int offset, int distance) {
-//        if (canDoRefresh(parent, distance)){
-//            setState(RELEASE);
-//        } else {
-//            setState(NORMAL);
-//        }
+        if (canDoRefresh(parent, distance)){
+            setState(RELEASE);
+        } else {
+            setState(NORMAL);
+        }
     }
 
     @Override
