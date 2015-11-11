@@ -1,4 +1,4 @@
-package com.minutes.swipelayout;
+package com.minutes.swipelayout.temp;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -10,6 +10,7 @@ import android.graphics.Path;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
@@ -18,14 +19,21 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.minutes.swipelayout.LoadingState;
+import com.minutes.swipelayout.R;
+
 /**
- * <p>Description  : LoadingView.</p>
+ * <p>Description  : TestHeader.</p>
  * <p/>
  * <p>Author       : wangchao.</p>
- * <p>Date         : 15/11/3.</p>
- * <p>Time         : 下午10:37.</p>
+ * <p>Date         : 15/11/10.</p>
+ * <p>Time         : 下午4:22.</p>
  */
-public class HeaderView extends LinearLayout implements IHeaderLayout {
+public class TestHeader extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
+    public static final int NORMAL = 0;
+    public static final int RELEASE = 1;
+    public static final int REFRESHING = 2;
+    public static final int RESET = 3;
 
     public static final String TEXT_RELEASE_TO_LOAD_MORE = "松开立即加载";
     public static final String TEXT_PULL_TO_LOAD_MORE    = "上拉加载更多";
@@ -44,29 +52,33 @@ public class HeaderView extends LinearLayout implements IHeaderLayout {
     private boolean isHeader;
     private int headerHeight;
 
-    public HeaderView(Context context) {
+    public TestHeader(Context context) {
         super(context);
         init();
     }
 
-    public HeaderView(Context context, AttributeSet attrs) {
+    public TestHeader(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    @TargetApi(11) public HeaderView(Context context, AttributeSet attrs, int defStyleAttr) {
+    @TargetApi(11) public TestHeader(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
 
-    @TargetApi(21) public HeaderView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    @TargetApi(21) public TestHeader(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
 
-    public int dip2px(float dpValue) {
-        final float scale = getContext().getResources().getDisplayMetrics().density;
+    public static int dip2px(Context context, float dpValue) {
+        final float scale = context.getResources().getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
+    }
+
+    public int dip2px(float dpValue){
+        return dip2px(getContext(), dpValue);
     }
 
     private void init(){
@@ -91,7 +103,10 @@ public class HeaderView extends LinearLayout implements IHeaderLayout {
         mRotateDownAnimation.setFillAfter(true);
         mRotateDownAnimation.setInterpolator(new LinearInterpolator());
 
-        setState(LoadingState.NORMAL);
+        setBackgroundColor(Color.parseColor("#1111ff"));
+        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dip2px(50));
+        setLayoutParams(lp);
+        setState(NORMAL);
     }
 
     /**
@@ -161,7 +176,7 @@ public class HeaderView extends LinearLayout implements IHeaderLayout {
             return;
         }
         switch (state) {
-            case LoadingState.NORMAL:
+            case NORMAL:
                 if (isHeader) {
                     text.setText(TEXT_PULL_TO_REFRESH);
                     progress.setVisibility(GONE);
@@ -181,18 +196,18 @@ public class HeaderView extends LinearLayout implements IHeaderLayout {
                     }
                 }
                 break;
-            case LoadingState.REFRESHING:
+            case REFRESHING:
                 text.setText(TEXT_REFRESHING);
                 arrow.clearAnimation();
                 arrow.setVisibility(GONE);
                 progress.setVisibility(VISIBLE);
                 break;
-            case LoadingState.RESET:
+            case RESET:
                 arrow.clearAnimation();
                 arrow.setVisibility(GONE);
                 progress.setVisibility(GONE);
                 break;
-            case LoadingState.RELEASE:
+            case RELEASE:
                 if (isHeader) {
                     text.setText(TEXT_RELEASE_TO_REFRESH);
                     progress.setVisibility(GONE);
@@ -212,8 +227,44 @@ public class HeaderView extends LinearLayout implements IHeaderLayout {
         this.state = state;
     }
 
-    public void onDrag(float offset) {
+    @Override
+    public int viewType() {
+        return HEADER;
+    }
 
+    @Override
+    public int refreshHeight() {
+        return dip2px(50);
+    }
+
+    @Override
+    public boolean canDoRefresh(SwipeLayout parent, int pullDistance) {
+        return pullDistance > dip2px(50);
+    }
+
+    @Override
+    public void startRefreshing(final SwipeLayout parent) {
+//        setState(REFRESHING);
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+               parent.setRefresh(false);
+            }
+        }, 3000);
+    }
+
+    @Override
+    public void pullOffset(SwipeLayout parent, int offset, int distance) {
+//        if (canDoRefresh(parent, distance)){
+//            setState(RELEASE);
+//        } else {
+//            setState(NORMAL);
+//        }
+    }
+
+    @Override
+    public void completeRefresh(SwipeLayout parent) {
+//        setState(RESET);
     }
 }
 
