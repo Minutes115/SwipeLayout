@@ -19,7 +19,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.minutes.swipelayout.LoadingState;
 import com.minutes.swipelayout.R;
 
 /**
@@ -48,7 +47,7 @@ public class PullToRefreshHeader extends LinearLayout implements com.minutes.swi
     private Animation mRotateUpAnimation;
     private Animation mRotateDownAnimation;
 
-    private int state = LoadingState.NORMAL;
+    private int state = NORMAL;
     private boolean isHeader;
     private int headerHeight;
 
