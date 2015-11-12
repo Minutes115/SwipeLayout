@@ -1,4 +1,4 @@
-package com.minutes.swipelayout;
+package com.minutes.swipelayout.temp;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -10,6 +10,7 @@ import android.graphics.Path;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
@@ -18,20 +19,27 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.minutes.swipelayout.LoadingState;
+import com.minutes.swipelayout.R;
+
 /**
- * <p>Description  : FooterViewextends.</p>
+ * <p>Description  : MaterialHeader.</p>
  * <p/>
  * <p>Author       : wangchao.</p>
- * <p>Date         : 15/11/4.</p>
- * <p>Time         : 下午4:29.</p>
+ * <p>Date         : 15/11/12.</p>
+ * <p>Time         : 上午10:29.</p>
  */
-public class FooterView extends LinearLayout implements IFooterLayout {
+public class MaterialHeader extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
+    public static final int NORMAL = 0;
+    public static final int RELEASE = 1;
+    public static final int REFRESHING = 2;
+    public static final int RESET = 3;
 
     public static final String TEXT_RELEASE_TO_LOAD_MORE = "松开立即加载";
-    public static final String TEXT_PULL_TO_LOAD_MORE = "上拉加载更多";
-    public static final String TEXT_REFRESHING = "正在刷新";
-    public static final String TEXT_PULL_TO_REFRESH = "下拉可以刷新";
-    public static final String TEXT_RELEASE_TO_REFRESH = "松开立即刷新";
+    public static final String TEXT_PULL_TO_LOAD_MORE    = "上拉加载更多";
+    public static final String TEXT_REFRESHING           = "正在刷新";
+    public static final String TEXT_PULL_TO_REFRESH      = "下拉可以刷新";
+    public static final String TEXT_RELEASE_TO_REFRESH   = "松开立即刷新";
 
     private TextView text;
     private ImageView arrow;
@@ -44,41 +52,48 @@ public class FooterView extends LinearLayout implements IFooterLayout {
     private boolean isHeader;
     private int headerHeight;
 
-    public int dip2px(float dpValue) {
-        final float scale = getContext().getResources().getDisplayMetrics().density;
-        return (int) (dpValue * scale + 0.5f);
+    public void setHeader(boolean isHeader){
+        this.isHeader = isHeader;
     }
 
-    public FooterView(Context context) {
+    public MaterialHeader(Context context) {
         super(context);
         init();
     }
 
-    public FooterView(Context context, AttributeSet attrs) {
+    public MaterialHeader(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    @TargetApi(11) public FooterView(Context context, AttributeSet attrs, int defStyleAttr) {
+    @TargetApi(11) public MaterialHeader(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
 
-    @TargetApi(21) public FooterView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    @TargetApi(21) public MaterialHeader(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
 
-    public void init() {
+    public static int dip2px(Context context, float dpValue) {
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (dpValue * scale + 0.5f);
+    }
 
-        this.isHeader = false;
+    public int dip2px(float dpValue){
+        return dip2px(getContext(), dpValue);
+    }
+
+    private void init(){
+        this.isHeader = true;
         this.headerHeight = dip2px(60);
 
         View root = LayoutInflater.from(getContext()).inflate(R.layout.layout_refresh_loading, this);
         arrow = (ImageView) root.findViewById(R.id.refresh_arrow);
         arrow.setImageBitmap(getArrowBitmap(isHeader));
         text = (TextView) root.findViewById(R.id.refresh_msg);
-        text.setText(isHeader ? TEXT_PULL_TO_REFRESH : TEXT_PULL_TO_LOAD_MORE);
+        text.setVisibility(GONE);
         progress = (ProgressBar) root.findViewById(R.id.refresh_loading);
         progress.setVisibility(GONE);
         //箭头翻转动画
@@ -91,22 +106,25 @@ public class FooterView extends LinearLayout implements IFooterLayout {
         mRotateDownAnimation.setDuration(200);
         mRotateDownAnimation.setFillAfter(true);
         mRotateDownAnimation.setInterpolator(new LinearInterpolator());
+
+        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dip2px(50));
+        setLayoutParams(lp);
     }
 
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
      */
     private Bitmap getArrowBitmap(boolean isHeader) {
-        int width = (int) (headerHeight * .6);
-        int height = (int) (headerHeight * .6);
-        Bitmap bmp = Bitmap.createBitmap(width, width, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bmp);
-        Path path = new Path();
-        float arrowHeight = (float) (width * .3);
-        float arrowWidth = (float) (width * .7);
-        float arrowPoint = width / 2 / 2;
-        float barPad = (float) (height * .52);
-        Paint paint = new Paint();
+        int    width       = (int) (headerHeight * .6);
+        int    height      = (int) (headerHeight * .6);
+        Bitmap bmp         = Bitmap.createBitmap(width, width, Bitmap.Config.ARGB_8888);
+        Canvas canvas      = new Canvas(bmp);
+        Path path        = new Path();
+        float  arrowHeight = (float) (width * .3);
+        float  arrowWidth  = (float) (width * .7);
+        float  arrowPoint  = width / 2 / 2;
+        float  barPad      = (float) (height * .52);
+        Paint paint       = new Paint();
         paint.setAntiAlias(true);
         if (isHeader) {
             path.moveTo(arrowPoint + arrowWidth / 2, height);
@@ -127,7 +145,8 @@ public class FooterView extends LinearLayout implements IFooterLayout {
             path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .73));
             path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .73));
             path.close();
-        } else {
+        }
+        else {
             path.moveTo(arrowPoint + arrowWidth / 2, 0);
             path.lineTo(arrowPoint + arrowWidth, arrowHeight);
             path.lineTo((float) (arrowPoint + arrowWidth * .75), arrowHeight);
@@ -154,23 +173,21 @@ public class FooterView extends LinearLayout implements IFooterLayout {
         return bmp;
     }
 
-    @Override
     public void setState(int state) {
         if (this.state == state) {
             return;
         }
         switch (state) {
-            case LoadingState.NORMAL:
+            case NORMAL:
                 if (isHeader) {
-                    text.setText(TEXT_PULL_TO_REFRESH);
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     if (arrow.getAnimation() == mRotateUpAnimation) {
                         arrow.clearAnimation();
                         arrow.startAnimation(mRotateDownAnimation);
                     }
-                } else {
-                    text.setText(TEXT_PULL_TO_LOAD_MORE);
+                }
+                else {
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     if (arrow.getAnimation() == mRotateUpAnimation) {
@@ -179,26 +196,24 @@ public class FooterView extends LinearLayout implements IFooterLayout {
                     }
                 }
                 break;
-            case LoadingState.REFRESHING:
-                text.setText(TEXT_REFRESHING);
+            case REFRESHING:
                 arrow.clearAnimation();
                 arrow.setVisibility(GONE);
                 progress.setVisibility(VISIBLE);
                 break;
-            case LoadingState.RESET:
+            case RESET:
                 arrow.clearAnimation();
                 arrow.setVisibility(GONE);
                 progress.setVisibility(GONE);
                 break;
-            case LoadingState.RELEASE:
+            case RELEASE:
                 if (isHeader) {
-                    text.setText(TEXT_RELEASE_TO_REFRESH);
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     arrow.clearAnimation();
                     arrow.startAnimation(mRotateUpAnimation);
-                } else {
-                    text.setText(TEXT_RELEASE_TO_LOAD_MORE);
+                }
+                else {
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     arrow.clearAnimation();
@@ -210,7 +225,55 @@ public class FooterView extends LinearLayout implements IFooterLayout {
     }
 
     @Override
-    public void onDrag(float offset) {
+    public int viewType() {
+        return HEADER;
+    }
 
+    @Override
+    public int refreshHeight() {
+        return dip2px(50);
+    }
+
+    @Override
+    public boolean canDoRefresh(SwipeLayout parent, int pullDistance) {
+        return pullDistance > dip2px(50);
+    }
+
+    @Override
+    public void startRefreshing(final SwipeLayout parent) {
+        setState(REFRESHING);
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                parent.setRefresh(false);
+            }
+        }, 2000);
+    }
+
+    @Override
+    public void pullOffset(SwipeLayout parent, int offset, int distance) {
+        if (canDoRefresh(parent, distance)){
+            setState(RELEASE);
+        } else {
+            setState(NORMAL);
+        }
+    }
+
+    @Override
+    public void completeRefresh(SwipeLayout parent) {
+        setState(RESET);
+    }
+
+    public static class MaterialFooter extends PullToRefreshHeader{
+
+        public MaterialFooter(Context context) {
+            super(context);
+            setHeader(false);
+        }
+
+        @Override
+        public int viewType() {
+            return FOOTER;
+        }
     }
 }
