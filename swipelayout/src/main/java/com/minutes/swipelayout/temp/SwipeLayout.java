@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
@@ -82,9 +83,6 @@ public class SwipeLayout extends ViewGroup{
         mScrollMode     = ScrollMode.SCROLL_FOLLOW;
         touchSlop       = ViewConfiguration.get(getContext()).getScaledTouchSlop();
 
-        //debug code
-        TestHeader head = new TestHeader(getContext());
-        addView(head);
     }
 
     @Override protected boolean checkLayoutParams(LayoutParams p) {
@@ -130,6 +128,8 @@ public class SwipeLayout extends ViewGroup{
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (mContentView != null){
             measureContentView(mContentView, widthMeasureSpec, heightMeasureSpec);
+            MarginLayoutParams lp = (MarginLayoutParams) mContentView.getLayoutParams();
+            mContentHeight = mContentView.getMeasuredHeight() + lp.topMargin + lp.bottomMargin;
         }
 
         if (mHeaderView != null){
@@ -164,7 +164,6 @@ public class SwipeLayout extends ViewGroup{
     }
 
     @Override protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        log("onLayout == offset : " + mScrollerHelper.getCurrOffsetY());
 
         int paddingLeft = getPaddingLeft();
         int paddingTop = getPaddingTop();
@@ -178,7 +177,9 @@ public class SwipeLayout extends ViewGroup{
             final int top = paddingTop + lp.topMargin + (isFont ? 0 : offset);
             final int right = left + mContentView.getMeasuredWidth();
             final int bottom = top + mContentView.getMeasuredHeight();
-            mScrollerHelper.setContentOnLayoutRect(left, top, right, bottom);
+            if (!isRefreshing){
+                mScrollerHelper.setContentOnLayoutRect(left, top, right, bottom);
+            }
             mContentView.layout(left, top, right, bottom);
         }
 
@@ -187,13 +188,17 @@ public class SwipeLayout extends ViewGroup{
             //is follow / font mode
             boolean isScrollFollow = (mScrollMode == ScrollMode.SCROLL_FOLLOW
                     || mScrollMode == ScrollMode.SCROLL_FONT);
+            //is back mode
+            boolean isBack = mScrollMode == ScrollMode.SCROLL_BACK;
 
             final int left = paddingLeft + lp.leftMargin;
-            final int top = paddingTop + lp.topMargin + offset -
+            final int top = paddingTop + lp.topMargin + (isBack ? 0 : offset) -
                     (isScrollFollow ? mHeaderHeight : 0);
             final int right = left + mHeaderView.getMeasuredWidth();
             final int bottom = top + mHeaderView.getMeasuredHeight();
-            mScrollerHelper.setHeaderOnLayoutRect(left, top, right, bottom);
+            if (!isRefreshing) {
+                mScrollerHelper.setHeaderOnLayoutRect(left, top, right, bottom);
+            }
             mHeaderView.layout(left, top, right, bottom);
         }
 
@@ -202,21 +207,25 @@ public class SwipeLayout extends ViewGroup{
             //is follow / font mode
             boolean isScrollFollow = (mScrollMode == ScrollMode.SCROLL_FOLLOW
                     || mScrollMode == ScrollMode.SCROLL_FONT);
+            //is back mode
+            boolean isBack = mScrollMode == ScrollMode.SCROLL_BACK;
 
             final int left = paddingLeft + lp.leftMargin;
-            final int top = paddingTop + lp.topMargin + offset -
+            final int top = paddingTop + lp.topMargin + (isBack ? 0 : offset) +
                     (isScrollFollow ? mContentHeight : 0);
             final int right = left + mFooterView.getMeasuredWidth();
             final int bottom = top + mFooterView.getMeasuredHeight();
-            mScrollerHelper.setFooterOnLayoutRect(left, top, right, bottom);
+            if (!isRefreshing) {
+                mScrollerHelper.setFooterOnLayoutRect(left, top, right, bottom);
+            }
             mFooterView.layout(left, top, right, bottom);
         }
     }
 
     @Override public boolean onInterceptTouchEvent(MotionEvent ev) {
-//        if (isRefreshing){
-//            return super.onInterceptTouchEvent(ev);
-//        }
+        if (isRefreshing){
+            return true;
+        }
         if (!isEnabled() || (!canChildPullDown() && !canChildPullUp())){
             return super.onInterceptTouchEvent(ev);
         }
@@ -257,7 +266,6 @@ public class SwipeLayout extends ViewGroup{
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:{
                 isDragging = false;
-                release();
             } break;
         }
         return isDragging;
@@ -274,7 +282,7 @@ public class SwipeLayout extends ViewGroup{
                 isDragging = false;
             } break;
             case MotionEvent.ACTION_MOVE:{
-                mScrollerHelper.setCurrY(event.getY());
+                mScrollerHelper.moveY(event.getY());
                 float delta = event.getY() - mScrollerHelper.getInitialY();
                 if (delta < 0 && mDirection == PULL_DIRECTION_DOWN){
                     return false;
@@ -283,18 +291,7 @@ public class SwipeLayout extends ViewGroup{
                     return false;
                 }
 
-                switch (mScrollMode) {
-                    case ScrollMode.SCROLL_FOLLOW:
-                        contentScrollY(mScrollerHelper.getCurrOffsetY());
-                        headerScrollY(mScrollerHelper.getCurrOffsetY());
-                        break;
-                    case ScrollMode.SCROLL_BACK:
-                        contentScrollY(mScrollerHelper.getCurrOffsetY());
-                        break;
-                    case ScrollMode.SCROLL_FONT:
-                        headerScrollY(mScrollerHelper.getCurrOffsetY());
-                        break;
-                }
+                move((int) mScrollerHelper.getCurrDeltaY());
 
             } break;
             case MotionEvent.ACTION_UP:
@@ -306,11 +303,37 @@ public class SwipeLayout extends ViewGroup{
         return true;
     }
 
+    /**
+     * 处理 Move
+     */
+    private void move(int delta){
+        int currOffset = mScrollerHelper.getCurrOffsetY() + delta;
+        mScrollerHelper.setCurrOffsetY(currOffset);
+
+        switch (mScrollMode) {
+            case ScrollMode.SCROLL_FOLLOW:
+                contentScrollY(delta);
+                headerScrollY(delta);
+                footerScrollY(delta);
+                break;
+            case ScrollMode.SCROLL_BACK:
+                contentScrollY(delta);
+                break;
+            case ScrollMode.SCROLL_FONT:
+                headerScrollY(delta);
+                footerScrollY(delta);
+                break;
+        }
+    }
+
     private ILoadLayout ILoadLayout(View view){
         return (ILoadLayout) view;
     }
 
-    private ILoadLayout ILoadLayout(){
+    /**
+     * 获取 ILoadLayout ，可能为空
+     */
+    @Nullable private ILoadLayout ILoadLayout(){
         ILoadLayout loadLayout = null;
         if (mDirection == PULL_DIRECTION_DOWN){
             loadLayout = ILoadLayout(mHeaderView);
@@ -321,63 +344,76 @@ public class SwipeLayout extends ViewGroup{
         return loadLayout;
     }
 
+    /**
+     * 便宜 Content
+     */
     private void contentScrollY(int offset){
         if (mContentView != null) {
             mContentView.offsetTopAndBottom(offset);
-            invalidate();
-        }
-    }
-
-    private void headerScrollY(int offset){
-        if (mHeaderView != null){
-            mHeaderView.offsetTopAndBottom(offset);
-            ILoadLayout(mHeaderView).pullOffset(this, offset, mScrollerHelper.getOffsetY());
-            invalidate();
-        }
-    }
-
-    private void footerScrollY(int offset){
-        if (mFooterView != null){
-            mFooterView.offsetTopAndBottom(offset);
-            ILoadLayout(mFooterView).pullOffset(this, offset, mScrollerHelper.getOffsetY());
-            invalidate();
-        }
-    }
-
-    private int currContentViewOffset(){
-        if (mScrollMode == ScrollMode.SCROLL_FONT){
-            if (mDirection == PULL_DIRECTION_DOWN){
-                return Math.abs(mHeaderView.getTop() - mScrollerHelper.getHeaderOnLayoutRect().top);
-            } else if (mDirection == PULL_DIRECTION_UP){
-                return Math.abs(mFooterView.getTop() - mScrollerHelper.getFooterOnLayoutRect().top);
-            } else {
-                return mScrollerHelper.getOffsetY();
+            if (mScrollMode == ScrollMode.SCROLL_BACK && !isRefreshing){
+                ILoadLayout iLoadLayout = ILoadLayout();
+                if (iLoadLayout != null){
+                    iLoadLayout.pullOffset(this, offset, mScrollerHelper.getAbsCurrOffsetY());
+                }
             }
+            invalidate();
         }
-        return Math.abs(mContentView.getTop()) - mScrollerHelper.getContentOnLayoutRect().top;
     }
 
+    /**
+     * 便宜 Header
+     */
+    private void headerScrollY(int offset){
+        if (mHeaderView != null && canChildPullDown()){
+            mHeaderView.offsetTopAndBottom(offset);
+            if (!isRefreshing){
+                ILoadLayout(mHeaderView).pullOffset(this, offset, mScrollerHelper.getAbsCurrOffsetY());
+            }
+            invalidate();
+        }
+    }
+
+    /**
+     * 偏移 Footer
+     */
+    private void footerScrollY(int offset){
+        if (mFooterView != null && canChildPullUp()){
+            mFooterView.offsetTopAndBottom(offset);
+            if (!isRefreshing){
+                ILoadLayout(mFooterView).pullOffset(this, offset, mScrollerHelper.getAbsCurrOffsetY());
+            }
+            invalidate();
+        }
+    }
+
+    /**
+     * 获取当前视图偏移量
+     */
+    private int currContentViewOffset(){
+        return mScrollerHelper.getAbsCurrOffsetY();
+    }
+
+    /**
+     * 释放操作处理
+     */
     private void release(){
         int offset = currContentViewOffset();
         final ILoadLayout loadLayout = ILoadLayout();
         if (canPullToRefresh(loadLayout)){
-            offset -= loadLayout.refreshHeight();
+            final int refreshHeight = loadLayout.refreshHeight();
+            offset -= refreshHeight;
             if (mDirection == PULL_DIRECTION_DOWN){
                 offset = -offset;
             }
 
-            mScroller.startScroll(offset, MAX_OFFSET_ANIMATION_DURATION, new ScrollListener() {
-                @Override
-                public void finish() {
-                    if (mDirection == PULL_DIRECTION_DOWN){
-                        doListenerPullToRefresh();
-                    } else {
-                        doListenerLoadMore();
-                    }
-                    isRefreshing = true;
-                    loadLayout.startRefreshing(SwipeLayout.this);
-                }
-            });
+            if (mDirection == PULL_DIRECTION_DOWN){
+                doListenerPullToRefresh();
+            } else {
+                doListenerLoadMore();
+            }
+            isRefreshing = true;
+            loadLayout.startRefreshing(SwipeLayout.this);
+            mScroller.startScroll(offset, MAX_OFFSET_ANIMATION_DURATION);
 
         } else {
             refreshComplete();
@@ -385,36 +421,47 @@ public class SwipeLayout extends ViewGroup{
 
     }
 
+    /**
+     * 执行回调
+     */
     private void doListenerPullToRefresh(){
         if (mListener != null){
             mListener.pullToRefresh();
         }
     }
 
+    /**
+     * 执行回调
+     */
     private void doListenerLoadMore(){
         if (mListener != null){
             mListener.loadMore();
         }
     }
 
+    /**
+     * 自动刷新
+     */
     private void autoRefreshHeader(){
         mDirection = PULL_DIRECTION_DOWN;
         final ILoadLayout loadLayout = ILoadLayout(mHeaderView);
-        int refreshHeight = loadLayout.refreshHeight();
-        mScroller.startScroll(refreshHeight, MAX_OFFSET_ANIMATION_DURATION, new ScrollListener() {
-            @Override
-            public void finish() {
-                isRefreshing = true;
-                doListenerPullToRefresh();
-                loadLayout.startRefreshing(SwipeLayout.this);
-            }
-        });
+        final int refreshHeight = loadLayout.refreshHeight();
+        isRefreshing = true;
+        doListenerPullToRefresh();
+        loadLayout.startRefreshing(SwipeLayout.this);
+        mScroller.startScroll(refreshHeight, MAX_OFFSET_ANIMATION_DURATION);
     }
 
+    /**
+     * 是否可以触发刷新
+     */
     private boolean canPullToRefresh(ILoadLayout loadLayout){
-        return loadLayout != null && loadLayout.canDoRefresh(this, mScrollerHelper.getOffsetY());
+        return loadLayout != null && loadLayout.canDoRefresh(this, mScrollerHelper.getAbsCurrOffsetY());
     }
 
+    /**
+     * 完成刷新
+     */
     private void refreshComplete(){
         int offset = currContentViewOffset();
         final ILoadLayout loadLayout = ILoadLayout();
@@ -429,8 +476,8 @@ public class SwipeLayout extends ViewGroup{
         mScroller.startScroll(offset, MAX_OFFSET_ANIMATION_DURATION, new ScrollListener() {
             @Override
             public void finish() {
-                loadLayout.completeRefresh(SwipeLayout.this);
                 isRefreshing = false;
+                loadLayout.completeRefresh(SwipeLayout.this);
             }
         });
     }
@@ -441,7 +488,7 @@ public class SwipeLayout extends ViewGroup{
     private boolean canChildPullDown() {
         final View child  = mContentView;
         final View header = mHeaderView;
-        if (child == null){
+        if (child == null || header == null){
             return false;
         }
         if (child instanceof AbsListView) {
@@ -469,7 +516,7 @@ public class SwipeLayout extends ViewGroup{
     private boolean canChildPullUp() {
         final View child  = mContentView;
         final View footer = mFooterView;
-        if (child == null){
+        if (child == null || footer == null){
             return false;
         }
         if (child instanceof AbsListView) {
@@ -488,10 +535,16 @@ public class SwipeLayout extends ViewGroup{
         return false;
     }
 
+    /**
+     * 判断是否为 ILoadLayout
+     */
     private boolean isILoadLayout(View view){
         return view != null && view instanceof ILoadLayout;
     }
 
+    /**
+     * 设置滑动模式{@link ScrollMode}
+     */
     public void setScrollMode(@ScrollMode.Mode int scrollMode){
         this.mScrollMode = scrollMode;
         if (mScrollMode == ScrollMode.SCROLL_FONT){
@@ -509,6 +562,9 @@ public class SwipeLayout extends ViewGroup{
         }
     }
 
+    /**
+     * 设置 Header
+     */
     public void setHeaderView(@NonNull View header) {
         if (!isILoadLayout(header)){
             return;
@@ -525,6 +581,9 @@ public class SwipeLayout extends ViewGroup{
         addView(header);
     }
 
+    /**
+     * 设置 Footer
+     */
     public void setFooterView(@NonNull View footer) {
         if (!isILoadLayout(footer)){
             return;
@@ -537,10 +596,13 @@ public class SwipeLayout extends ViewGroup{
             lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
             footer.setLayoutParams(lp);
         }
-        mHeaderView = footer;
+        mFooterView = footer;
         addView(footer);
     }
 
+    /**
+     * 设置是否刷新
+     */
     public void setRefresh(boolean refresh){
         if (refresh){
             autoRefreshHeader();
@@ -576,18 +638,7 @@ public class SwipeLayout extends ViewGroup{
             if (computeScrollOffset() && !isFinished()){
                 int delta = getCurrY() - mLastY;
                 mLastY = getCurrY();
-                switch (mScrollMode){
-                    case ScrollMode.SCROLL_FOLLOW:
-                        contentScrollY(delta);
-                        headerScrollY(delta);
-                        break;
-                    case ScrollMode.SCROLL_BACK:
-                        contentScrollY(delta);
-                        break;
-                    case ScrollMode.SCROLL_FONT:
-                        headerScrollY(delta);
-                        break;
-                }
+                move(delta);
                 post(this);
             } else {
                 if (mScrollListener != null){
@@ -603,6 +654,9 @@ public class SwipeLayout extends ViewGroup{
             return isAutoRunning;
         }
 
+        /**
+         * 终端当前自动滑动（如果有的话）
+         */
         public void interceptScroll(){
             if (isAutoRunning && !isFinished()){
                 forceFinished(true);
@@ -615,6 +669,13 @@ public class SwipeLayout extends ViewGroup{
             }
         }
 
+        /**
+         * 自动滑动
+         *
+         * @param distance  滑动距离
+         * @param duration  持续时间
+         * @param listener  结束监听
+         */
         public void startScroll(int distance, int duration, ScrollListener listener){
             mScrollListener = listener;
             mLastY = 0;
@@ -623,6 +684,12 @@ public class SwipeLayout extends ViewGroup{
             post(this);
         }
 
+        /**
+         * 自动滑动
+         *
+         * @param distance 滑动距离
+         * @param duration 持续时间
+         */
         public void startScroll(int distance, int duration){
             startScroll(distance, duration, null);
         }

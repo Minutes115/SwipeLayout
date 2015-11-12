@@ -23,13 +23,13 @@ import com.minutes.swipelayout.LoadingState;
 import com.minutes.swipelayout.R;
 
 /**
- * <p>Description  : TestHeader.</p>
+ * <p>Description  : MaterialHeader.</p>
  * <p/>
  * <p>Author       : wangchao.</p>
- * <p>Date         : 15/11/10.</p>
- * <p>Time         : 下午4:22.</p>
+ * <p>Date         : 15/11/12.</p>
+ * <p>Time         : 上午10:29.</p>
  */
-public class TestHeader extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
+public class MaterialHeader extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
     public static final int NORMAL = 0;
     public static final int RELEASE = 1;
     public static final int REFRESHING = 2;
@@ -52,22 +52,26 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
     private boolean isHeader;
     private int headerHeight;
 
-    public TestHeader(Context context) {
+    public void setHeader(boolean isHeader){
+        this.isHeader = isHeader;
+    }
+
+    public MaterialHeader(Context context) {
         super(context);
         init();
     }
 
-    public TestHeader(Context context, AttributeSet attrs) {
+    public MaterialHeader(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    @TargetApi(11) public TestHeader(Context context, AttributeSet attrs, int defStyleAttr) {
+    @TargetApi(11) public MaterialHeader(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
 
-    @TargetApi(21) public TestHeader(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    @TargetApi(21) public MaterialHeader(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
@@ -89,7 +93,7 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
         arrow = (ImageView) root.findViewById(R.id.refresh_arrow);
         arrow.setImageBitmap(getArrowBitmap(isHeader));
         text = (TextView) root.findViewById(R.id.refresh_msg);
-        text.setText(isHeader ? TEXT_PULL_TO_REFRESH : TEXT_PULL_TO_LOAD_MORE);
+        text.setVisibility(GONE);
         progress = (ProgressBar) root.findViewById(R.id.refresh_loading);
         progress.setVisibility(GONE);
         //箭头翻转动画
@@ -103,10 +107,8 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
         mRotateDownAnimation.setFillAfter(true);
         mRotateDownAnimation.setInterpolator(new LinearInterpolator());
 
-        setBackgroundColor(Color.parseColor("#1111ff"));
         ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dip2px(50));
         setLayoutParams(lp);
-        setState(NORMAL);
     }
 
     /**
@@ -178,7 +180,6 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
         switch (state) {
             case NORMAL:
                 if (isHeader) {
-                    text.setText(TEXT_PULL_TO_REFRESH);
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     if (arrow.getAnimation() == mRotateUpAnimation) {
@@ -187,7 +188,6 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
                     }
                 }
                 else {
-                    text.setText(TEXT_PULL_TO_LOAD_MORE);
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     if (arrow.getAnimation() == mRotateUpAnimation) {
@@ -197,7 +197,6 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
                 }
                 break;
             case REFRESHING:
-                text.setText(TEXT_REFRESHING);
                 arrow.clearAnimation();
                 arrow.setVisibility(GONE);
                 progress.setVisibility(VISIBLE);
@@ -209,14 +208,12 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
                 break;
             case RELEASE:
                 if (isHeader) {
-                    text.setText(TEXT_RELEASE_TO_REFRESH);
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     arrow.clearAnimation();
                     arrow.startAnimation(mRotateUpAnimation);
                 }
                 else {
-                    text.setText(TEXT_RELEASE_TO_LOAD_MORE);
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     arrow.clearAnimation();
@@ -244,11 +241,11 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
 
     @Override
     public void startRefreshing(final SwipeLayout parent) {
-//        setState(REFRESHING);
+        setState(REFRESHING);
         postDelayed(new Runnable() {
             @Override
             public void run() {
-               parent.setRefresh(false);
+                parent.setRefresh(false);
             }
         }, 2000);
     }
@@ -264,7 +261,19 @@ public class TestHeader extends LinearLayout implements com.minutes.swipelayout.
 
     @Override
     public void completeRefresh(SwipeLayout parent) {
-//        setState(RESET);
+        setState(RESET);
+    }
+
+    public static class MaterialFooter extends PullToRefreshHeader{
+
+        public MaterialFooter(Context context) {
+            super(context);
+            setHeader(false);
+        }
+
+        @Override
+        public int viewType() {
+            return FOOTER;
+        }
     }
 }
-

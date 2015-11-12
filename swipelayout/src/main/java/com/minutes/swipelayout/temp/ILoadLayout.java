@@ -23,15 +23,41 @@ public interface ILoadLayout {
     @Retention(RetentionPolicy.SOURCE)
     @interface Type{}
 
+    /**
+     * 视图类型 Header / Footer
+     */
     @ILoadLayout.Type int viewType();
 
+    /**
+     * 保持刷新时的高度
+     */
     int refreshHeight();
 
+    /**
+     * 是否可以刷新
+     *
+     * @param parent        SwipeLayout
+     * @param pullDistance  拉动偏移量
+     * @return              Boolean
+     */
     boolean canDoRefresh(SwipeLayout parent, int pullDistance);
 
+    /**
+     * 启动刷新
+     */
     void startRefreshing(SwipeLayout parent);
 
-    void pullOffset(SwipeLayout parent, int offset, int distance);
+    /**
+     * 拉动时的偏移量
+     *
+     * @param parent    SwipeLayout
+     * @param delta     当前距离上一次拉动的偏移量
+     * @param offset    纵向偏移量
+     */
+    void pullOffset(SwipeLayout parent, int delta, int offset);
 
+    /**
+     * 刷新结束
+     */
     void completeRefresh(SwipeLayout parent);
 }

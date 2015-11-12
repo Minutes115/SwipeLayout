@@ -15,18 +15,21 @@ public class ScrollHelper{
     private float mInitialY;
     private float mCurrY;
     private float mLastY;
+    private float mCurrDeltaY;
     private int mCurrOffsetY;
+    private int mLastOffsetY;
 
     private Rect mContentRect = new Rect();
     private Rect mHeaderRect = new Rect();
     private Rect mFooterRect = new Rect();
 
     public ScrollHelper(){
-
+        this(1f);
     }
 
     public ScrollHelper(float friction){
         this.mFriction = friction;
+        this.mCurrOffsetY = 0;
     }
 
     public void setContentOnLayoutRect(int left, int top, int right, int bottom){
@@ -57,20 +60,44 @@ public class ScrollHelper{
         return mInitialY;
     }
 
+    /**
+     * 设置初始化 y 坐标
+     */
     public void setInitialY(float initialY) {
         this.mInitialY   = initialY;
         this.mCurrY      = initialY;
         this.mLastY      = initialY;
     }
 
-    public float getCurrY() {
-        return mCurrY;
-    }
-
-    public void setCurrY(float currY) {
+    /**
+     * y 坐标方向移动，计算 deltaY
+     */
+    public void moveY(float currY){
         this.mLastY = this.mCurrY;
         this.mCurrY = currY;
-        this.mCurrOffsetY = (int) ((mCurrY - mLastY) / mFriction);
+        this.mCurrDeltaY = (int) ((mCurrY - mLastY) / mFriction);
+    }
+
+    /**
+     * 设置当前视图偏移量
+     */
+    public void setCurrOffsetY(int offsetY){
+        this.mLastOffsetY = this.mCurrOffsetY;
+        this.mCurrOffsetY = offsetY;
+    }
+
+    /**
+     * 获取当前视图偏移量
+     */
+    public int getCurrOffsetY(){
+        return this.mCurrOffsetY;
+    }
+
+    /**
+     * 获取上一次的视图偏移量
+     */
+    public int getLastOffsetY(){
+        return this.mLastOffsetY;
     }
 
     public float getLastY() {
@@ -83,16 +110,14 @@ public class ScrollHelper{
      *
      * @return 视图需要的偏移量
      */
-    public int getCurrOffsetY(){
-        return mCurrOffsetY;
+    public float getCurrDeltaY(){
+        return mCurrDeltaY;
     }
 
     /**
-     *
-     *
-     * @return
+     * 返回绝对值的当前视图偏移量
      */
-    public int getOffsetY() {
-        return (int) (Math.abs(mCurrY - mInitialY) / mFriction);
+    public int getAbsCurrOffsetY() {
+        return Math.abs(mCurrOffsetY);
     }
 }
