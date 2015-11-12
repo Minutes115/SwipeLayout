@@ -9,15 +9,14 @@ import android.graphics.Path;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.Animation;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
-import android.widget.Scroller;
 import android.widget.TextView;
-
-import timber.log.Timber;
 
 /**
  * User: LiangLong
@@ -26,7 +25,6 @@ import timber.log.Timber;
  * Note: com.minutes.library.widget.swipe2refresh
  */
 public class MyHeader implements ILoadLayout {
-    public static final int    DURING   = 500;
     public static final String TEXT_RELEASE_TO_LOAD_MORE = "松开立即加载";
     public static final String TEXT_PULL_TO_LOAD_MORE = "上拉加载更多";
     public static final String TEXT_REFRESHING = "正在刷新";
@@ -41,7 +39,8 @@ public class MyHeader implements ILoadLayout {
     private Animation mRotateDownAnimation;
 
     private View mLoadView;
-    private Scroller mScroller;
+    private SmoothScrollHelper runnable;
+    private Interpolator interpolator = new DecelerateInterpolator();
 
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
@@ -104,10 +103,6 @@ public class MyHeader implements ILoadLayout {
         return bmp;
     }
 
-    private int getVisibleHeight(){
-        return Math.abs(mLoadView.getScrollY());
-    }
-
     @Override
     public View loadView(SwipeToRefreshLayout swipeToRefreshLayout) {
         return mLoadView;
@@ -115,7 +110,7 @@ public class MyHeader implements ILoadLayout {
 
     @Override
     public int maxDistance() {
-        return 300;
+        return 220;
     }
 
     @Override
@@ -125,7 +120,7 @@ public class MyHeader implements ILoadLayout {
                          int top,
                          int right,
                          int bottom) {
-        if (mLoadView != null){
+        if (mLoadView != null) {
             mLoadView.bringToFront();
             mLoadView.layout(
                 mLoadView.getLeft(),
@@ -161,8 +156,6 @@ public class MyHeader implements ILoadLayout {
             mRotateDownAnimation.setFillAfter(true);
             mRotateDownAnimation.setInterpolator(new LinearInterpolator());
 
-            mScroller = new Scroller(context);
-
             mLoadView = View.inflate(context, R.layout.layout_refresh_loading, null);
             arrow = (ImageView) mLoadView.findViewById(R.id.refresh_arrow);
             arrow.setImageBitmap(getArrowBitmap(true));
@@ -171,7 +164,8 @@ public class MyHeader implements ILoadLayout {
             progress = (ProgressBar) mLoadView.findViewById(R.id.refresh_loading);
             progress.setVisibility(View.GONE);
 
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, maxDistance());
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                                                                       maxDistance());
             lp.gravity = Gravity.TOP;
             swipeToRefreshLayout.addView(mLoadView, -1, lp);
         }
@@ -183,15 +177,11 @@ public class MyHeader implements ILoadLayout {
         text.setText(TEXT_PULL_TO_REFRESH);
         progress.setVisibility(View.GONE);
         arrow.setVisibility(View.VISIBLE);
-        if (arrow.getAnimation() == mRotateUpAnimation) {
+        if (arrow.getAnimation() != mRotateDownAnimation) {
             arrow.clearAnimation();
             arrow.startAnimation(mRotateDownAnimation);
         }
-        Timber.tag("MyHeader");
-        Timber.e("onDragEvent" + offset + " " + mLoadView.getY());
-//        mScroller.forceFinished(true);
-//        mScroller.startScroll(0, 0, 0, (int) offset, 0);
-        swipeToRefreshLayout.scrollTo(0, getVisibleHeight() + (int) offset);
+        swipeToRefreshLayout.scrollTo(0, (int) offset);
     }
 
     @Override
@@ -199,29 +189,44 @@ public class MyHeader implements ILoadLayout {
         text.setText(TEXT_RELEASE_TO_REFRESH);
         progress.setVisibility(View.GONE);
         arrow.setVisibility(View.VISIBLE);
-        arrow.clearAnimation();
-        arrow.startAnimation(mRotateUpAnimation);
-
-//        mScroller.forceFinished(true);
-//        mScroller.startScroll(0, 0, 0, (int) offset, 0);
-        swipeToRefreshLayout.scrollTo(0, (getVisibleHeight() + (int) offset));
+        if (arrow.getAnimation() != mRotateUpAnimation) {
+            arrow.clearAnimation();
+            arrow.startAnimation(mRotateUpAnimation);
+        }
+        swipeToRefreshLayout.scrollTo(0, (int) offset);
     }
 
     @Override
-    public void onRefreshing(SwipeToRefreshLayout swipeToRefreshLayout) {
+    public void onRefreshing(final SwipeToRefreshLayout strl) {
         text.setText(TEXT_REFRESHING);
         arrow.clearAnimation();
         arrow.setVisibility(View.GONE);
         progress.setVisibility(View.VISIBLE);
 
-        mScroller.forceFinished(true);
+        if (runnable != null) {
+            runnable.stop();
+        }
+        runnable = new SmoothScrollHelper(strl,
+                                          strl.getScrollY(),
+                                          -maxDistance(),
+                                          interpolator);
+        strl.post(runnable);
     }
 
     @Override
-    public void stopRefresh(SwipeToRefreshLayout swipeToRefreshLayout) {
+    public void stopRefresh(SwipeToRefreshLayout strl) {
         arrow.clearAnimation();
         arrow.setVisibility(View.GONE);
         progress.setVisibility(View.GONE);
+
+        if (runnable != null) {
+            runnable.stop();
+        }
+        runnable = new SmoothScrollHelper(strl,
+                                          strl.getScrollY(),
+                                          0,
+                                          interpolator);
+        strl.post(runnable);
     }
 
 }
