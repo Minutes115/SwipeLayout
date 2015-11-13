@@ -36,17 +36,34 @@ public class SwipeToRefreshLayout extends FrameLayout {
      */
     private float initialY;
 
-    private View childView;
+    /**
+     * 移动的偏移量
+     */
+    private float offset;
 
-    private ILoadLayout header = new MyHeader();
-    private ILoadLayout footer = new MyFooter();
-
+    /**
+     * 内容视图,在没有header与footer时应该在本View中只有这一个视图
+     */
+    private View contentView;
 
     /**
      * 标示是否用户正在拉动
      */
     private boolean isDragging;
+
+    /**
+     * 是否正在刷新
+     */
     private boolean isRefreshing;
+
+//    private ILoadLayout header = new PullToRefreshHeader();
+//    private ILoadLayout footer = new PullToLoadMoreFooter();
+
+    private ILoadLayout header = new PhoenixHeader();
+    private ILoadLayout footer = null;
+
+//    private ILoadLayout header = new MaterialHeader();
+//    private ILoadLayout footer = null;
 
     private SwipeToRefreshListener onRefreshListener;
 
@@ -56,7 +73,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
 
     public void setHeader(ILoadLayout header) {
         if (this.header != null) {
-            removeView(header.loadView(this));
+            this.header.onDetach(this);
         }
         this.header = header;
         this.header.onAttach(this);
@@ -64,7 +81,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
 
     public void setFooter(ILoadLayout footer) {
         if (this.footer != null) {
-            removeView(this.footer.loadView(this));
+            this.footer.onDetach(this);
         }
         this.footer = footer;
         this.footer.onAttach(this);
@@ -89,6 +106,26 @@ public class SwipeToRefreshLayout extends FrameLayout {
                 }
             }
         }, 100);
+    }
+
+
+    /**
+     * @return 获取内容视图, 该View在xml中应该只包含这一个View
+     */
+    public View getContentView() {
+        if (contentView == null) {
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (header != null && child.equals(header.getLoadView())) {
+                    continue;
+                }
+                if (footer != null && child.equals(footer.getLoadView())) {
+                    continue;
+                }
+                contentView = child;
+            }
+        }
+        return contentView;
     }
 
     public SwipeToRefreshLayout(Context context) {
@@ -124,33 +161,92 @@ public class SwipeToRefreshLayout extends FrameLayout {
         });
     }
 
-    private View getChildView() {
-        if (childView == null) {
-            for (int i = 0; i < getChildCount(); i++) {
-                View child = getChildAt(i);
-                if (header != null && child.equals(header.loadView(this))) {
-                    continue;
-                }
-                if (footer != null && child.equals(footer.loadView(this))) {
-                    continue;
-                }
-                childView = child;
-            }
-        }
-        return childView;
-    }
+//    @Override
+//    protected boolean checkLayoutParams(LayoutParams p) {
+//        return super.checkLayoutParams(p) && p instanceof MarginLayoutParams;
+//    }
+//
+//    @Override
+//    protected LayoutParams generateDefaultLayoutParams() {
+//        return new MarginLayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+//    }
+//
+//    @Override
+//    public LayoutParams generateLayoutParams(AttributeSet attrs) {
+//        return new MarginLayoutParams(getContext(), attrs);
+//    }
+//
+//    @Override
+//    protected LayoutParams generateLayoutParams(LayoutParams p) {
+//        return new MarginLayoutParams(p);
+//    }
+//
+//    @Override
+//    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+//        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+//        contentView = getContentView();
+//        if (contentView != null) {
+//            measureContentView(contentView, widthMeasureSpec, heightMeasureSpec);
+//        }
+////        if (header != null) {
+////            measureChildWithMargins(header.getLoadView(), widthMeasureSpec, 0, heightMeasureSpec, 0);
+////        }
+////        if (footer != null) {
+////            measureChildWithMargins(footer.getLoadView(), widthMeasureSpec, 0, heightMeasureSpec, 0);
+////        }
+//    }
+//
+//    private void measureContentView(View child, int parentWidthMeasureSpec, int parentHeightMeasureSpec) {
+//        final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
+//
+//        final int childWidthMeasureSpec = getChildMeasureSpec(
+//            parentWidthMeasureSpec,
+//            getPaddingLeft() + getPaddingRight(),
+//            lp.width
+//        );
+//
+//        final int childHeightMeasureSpec = getChildMeasureSpec(
+//            parentHeightMeasureSpec,
+//            getPaddingLeft() + getPaddingRight() + lp.leftMargin + lp.rightMargin,
+//            lp.height
+//        );
+//        child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
+//    }
+//
+//    @Override
+//    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+//        Log.e("SwipeToRefreshLayout","onLayout");
+//        int paddingLeft = getPaddingLeft();
+//        int paddingTop  = getPaddingTop();
+//        contentView = getContentView();
+//        if (contentView != null) {
+//            LayoutParams lp = contentView.getLayoutParams();
+//            final int left = paddingLeft;
+//            final int top = (int) (paddingTop);
+//            final int right = left + contentView.getMeasuredWidth();
+//            final int bottom = top + contentView.getMeasuredHeight();
+//            contentView.layout(left, top, right, bottom);
+//        }
+//        if (header != null) {
+//            header.onLayout(this, changed, offset, l, t, r, b);
+//        }
+//        if (footer != null) {
+//            footer.onLayout(this, changed, offset, l, t, r, b);
+//        }
+//    }
+
 
     @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        Log.e("SwipeToRefreshLayout","onLayout");
+        super.onLayout(changed, l, t, r, b);
         if (header != null) {
-            header.onLayout(this, changed, left, top, right, bottom);
+            header.onLayout(this, changed, offset, l, t, r, b);
         }
         if (footer != null) {
-            footer.onLayout(this, changed, left, top, right, bottom);
+            footer.onLayout(this, changed, offset, l, t, r, b);
         }
     }
-
 
     /**
      * @return 判断设置是否允许拉动
@@ -160,7 +256,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
     }
 
     /**
-     * @return 当设置了下拉刷新时,判断子View内容是否已经到头
+     * @return 当设置了下拉刷新时, 判断子View内容是否已经到头
      */
     private boolean canChildPullDown() {
         if (header == null) {
@@ -169,8 +265,8 @@ public class SwipeToRefreshLayout extends FrameLayout {
         if (mode != MODE_BOTH && mode != MODE_PULL_DOWN_TO_REFRESH) {
             return false;
         }
-        View child = getChildView();
-        if (child == null){
+        View child = getContentView();
+        if (child == null) {
             return false;
         }
         if (child instanceof AbsListView) {
@@ -194,7 +290,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
     }
 
     /**
-     * @return 当设置了上拉加载时,判断子View内容是否已经到底
+     * @return 当设置了上拉加载时, 判断子View内容是否已经到底
      */
     private boolean canChildPullUp() {
         if (footer == null) {
@@ -203,8 +299,8 @@ public class SwipeToRefreshLayout extends FrameLayout {
         if (mode != MODE_BOTH && mode != MODE_PULL_UP_TO_REFRESH) {
             return false;
         }
-        View child = getChildView();
-        if (child == null){
+        View child = getContentView();
+        if (child == null) {
             return false;
         }
         if (child instanceof AbsListView) {
@@ -227,6 +323,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
 
     /**
      * 拦截触摸事件
+     *
      * @param ev 触摸事件
      * @return false 往子view传递调事件,用子view onTouchEvent,true 不往下传递 直接调用该容器的onTouchEvent
      */
@@ -245,15 +342,15 @@ public class SwipeToRefreshLayout extends FrameLayout {
         }
         //在这里触发拉动事件,当没有在拉动的时候,如果是垂直拉动,并且距离大于指定的距离,设定为开始拉动,开始消费事件
         if (action == MotionEvent.ACTION_MOVE) {
-            float delta = initialY - ev.getY();
+            float delta = ev.getY() - initialY;
             //move事件只拦截符合滑动标准的事件,不满足的(比如轻微晃动的点击,不做处理)
             if (Math.abs(delta) >= touchSlop) {
                 if (isRefreshing) {
                     return true;
                 }
-                if (!isDragging){
-                    isDragging = (delta < 0 && canChildPullDown())
-                        || (delta > 0 &&  canChildPullUp());
+                if (!isDragging) {
+                    isDragging = (delta > 0 && canChildPullDown())
+                        || (delta < 0 && canChildPullUp());
                 }
             }
         }
@@ -269,17 +366,17 @@ public class SwipeToRefreshLayout extends FrameLayout {
         int action = MotionEventCompat.getActionMasked(event);
         if (action == MotionEvent.ACTION_MOVE) {
             if (isDragging) {
-                int distance = (int) ((initialY - event.getY()) / FRICTION);
-                handleDragEvent(distance);
+                offset = (event.getY() - initialY) / FRICTION;
+                handleDragEvent(offset);
             }
         }
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (isDragging) {
                 isDragging = false;
-                float delta = initialY - event.getY();
+                offset = event.getY() - initialY;
                 //没有设置回调的话就回弹
-                if (canFireOnRefreshEvent(delta / FRICTION)) {
-                    startRefresh(delta < 0);
+                if (canFireOnRefreshEvent(offset / FRICTION)) {
+                    startRefresh(offset > 0);
                 } else {
                     stopRefresh();
                 }
@@ -291,20 +388,23 @@ public class SwipeToRefreshLayout extends FrameLayout {
     /**
      * @param distance 手动滑动事件
      */
-    private void handleDragEvent(int distance) {
-        int d = Math.abs(distance);
-        if (header != null && distance < 0) {
-            if (d < header.maxDistance()) {
-                header.onDragEvent(this, distance);
-            } else {
-                header.onOverDragging(this, distance);
+    private void handleDragEvent(float distance) {
+        float d = Math.abs(distance);
+        if (distance > 0) {
+            if (header != null) {
+                if (d < header.refreshHeight()) {
+                    header.onDragEvent(this, distance);
+                } else {
+                    header.onOverDragging(this, distance);
+                }
             }
-        }
-        if (footer != null && distance > 0) {
-            if (d < footer.maxDistance()) {
-                footer.onDragEvent(this, distance);
-            } else {
-                footer.onOverDragging(this, distance);
+        } else {
+            if (footer != null) {
+                if (d < footer.refreshHeight()) {
+                    footer.onDragEvent(this, distance);
+                } else {
+                    footer.onOverDragging(this, distance);
+                }
             }
         }
     }
@@ -318,11 +418,14 @@ public class SwipeToRefreshLayout extends FrameLayout {
      */
     private boolean canFireOnRefreshEvent(float dragDistance) {
         float rate = 1f;
-        if ( header != null && dragDistance < 0) {
-            return Math.abs(dragDistance) >= header.maxDistance() * rate;
-        }
-        if (footer != null && dragDistance > 0) {
-            return Math.abs(dragDistance) >= footer.maxDistance() * rate;
+        if (dragDistance > 0) {
+            if (header != null){
+                return Math.abs(dragDistance) >= header.refreshHeight() * rate;
+            }
+        } else {
+            if (footer != null) {
+                return Math.abs(dragDistance) >= footer.refreshHeight() * rate;
+            }
         }
         return false;
     }
@@ -335,16 +438,19 @@ public class SwipeToRefreshLayout extends FrameLayout {
      */
     private void startRefresh(boolean isPullingDown) {
         isRefreshing = true;
-        if (header != null && isPullingDown ) {
-            header.onRefreshing(this);
-            if (onRefreshListener != null) {
-                onRefreshListener.onPull2Refresh(this);
+        if (isPullingDown) {
+            if (header != null) {
+                header.onRefreshing(this);
+                if (onRefreshListener != null) {
+                    onRefreshListener.onPull2Refresh(this);
+                }
             }
-        }
-        if (footer != null && !isPullingDown) {
-            footer.onRefreshing(this);
-            if (onRefreshListener != null) {
-                onRefreshListener.onLoadMore(this);
+        } else {
+            if (footer != null) {
+                footer.onRefreshing(this);
+                if (onRefreshListener != null) {
+                    onRefreshListener.onLoadMore(this);
+                }
             }
         }
     }

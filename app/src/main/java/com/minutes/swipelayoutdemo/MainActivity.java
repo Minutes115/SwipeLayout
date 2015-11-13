@@ -1,6 +1,5 @@
 package com.minutes.swipelayoutdemo;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -16,20 +15,26 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.minutes.swipelayout.MaterialHeader;
+import com.minutes.swipelayout.PhoenixHeader;
+import com.minutes.swipelayout.PullToRefreshHeader;
 import com.minutes.swipelayout.SwipeToRefreshLayout;
 import com.minutes.swipelayout.SwipeToRefreshListener;
 
 import java.util.List;
 import java.util.Vector;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SwipeToRefreshListener {
 
     final static List<String> list = new Vector<>();
+
     static {
-        for (int i = 0; i < 30; i++){
+        for (int i = 0; i < 30; i++) {
             list.add("Test data " + i);
         }
     }
+
+    private SwipeToRefreshLayout swipeLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                    .setAction("Action", null).show();
             }
         });
 
@@ -51,40 +56,37 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.setAdapter(new DemoAdapter());
 
-        SwipeToRefreshLayout swipeLayout = (SwipeToRefreshLayout) findViewById(R.id.swipeLayout);
-        swipeLayout.setMode(SwipeToRefreshLayout.MODE_BOTH);
-        swipeLayout.setOnRefreshListener(new SwipeToRefreshListener() {
-
-            @Override
-            public void onLoadMore(final SwipeToRefreshLayout layout) {
-                layout.postDelayed(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        layout.setRefreshing(false);
-                    }
-
-                }, 2000);
-            }
-
-            @Override
-            public void onPull2Refresh(final SwipeToRefreshLayout layout) {
-                layout.postDelayed(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        layout.setRefreshing(false);
-                    }
-
-                }, 2000);
-            }
-
-        });
-        swipeLayout.setRefreshing(true);
-
+        swipeLayout = (SwipeToRefreshLayout) findViewById(R.id.swipeLayout);
+        swipeLayout.setMode(SwipeToRefreshLayout.MODE_PULL_DOWN_TO_REFRESH);
+        swipeLayout.setOnRefreshListener(this);
+//        swipeLayout.setRefreshing(true);
     }
 
-    class DemoAdapter extends RecyclerView.Adapter<DemoViewHolder>{
+    @Override
+    public void onLoadMore(final SwipeToRefreshLayout layout) {
+        layout.postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                layout.setRefreshing(false);
+            }
+
+        }, 2000);
+    }
+
+    @Override
+    public void onPull2Refresh(final SwipeToRefreshLayout layout) {
+        layout.postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                layout.setRefreshing(false);
+            }
+
+        }, 2000);
+    }
+
+    class DemoAdapter extends RecyclerView.Adapter<DemoViewHolder> {
 
         @Override
         public DemoViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -103,8 +105,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class DemoViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    class DemoViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         final TextView text1;
+
         public DemoViewHolder(View itemView) {
             super(itemView);
             text1 = (TextView) itemView.findViewById(android.R.id.text1);
@@ -114,29 +117,35 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onClick(View v) {
             Toast.makeText(v.getContext(), text1.getText(), Toast.LENGTH_SHORT).show();
+//            startActivity(new Intent(MainActivity.this, TempTestActivity.class));
         }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_temp, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            startActivity(new Intent(this, TempTestActivity.class));
+        if (id == R.id.styleMaterial) {
+            MaterialHeader header = new MaterialHeader();
+            swipeLayout.setHeader(header);
             return true;
         }
+        if (id == R.id.stylePullToRefresh) {
+            PullToRefreshHeader head = new PullToRefreshHeader();
+            swipeLayout.setHeader(head);
 
+            return true;
+        }
+        if (id == R.id.stylePhoenix) {
+            PhoenixHeader head = new PhoenixHeader();
+            swipeLayout.setHeader(head);
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 }

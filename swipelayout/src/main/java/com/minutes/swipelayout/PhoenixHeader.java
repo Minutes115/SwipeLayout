@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.support.v4.view.ViewCompat;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.Animation;
@@ -19,13 +20,15 @@ import android.widget.TextView;
 /**
  * User: LiangLong
  * Date: 2015-11-05
- * Time: 11:34
+ * Time: 09:46
  * Note: com.minutes.library.widget.swipe2refresh
  */
-public class MyFooter implements ILoadLayout {
-    public static final String TEXT_RELEASE_TO_LOAD_MORE    = "松开立即加载";
-    public static final String TEXT_PULL_TO_LOAD_MORE       = "上拉加载更多";
-    public static final String TEXT_REFRESHING              = "正在刷新";
+public class PhoenixHeader implements ILoadLayout {
+    public static final String TEXT_REFRESHING = "正在刷新";
+    public static final String TEXT_PULL_TO_REFRESH = "下拉可以刷新";
+    public static final String TEXT_RELEASE_TO_REFRESH = "松开立即刷新";
+
+    private static final String TAG = PhoenixHeader.class.getSimpleName();
 
     private TextView text;
     private ImageView arrow;
@@ -35,7 +38,7 @@ public class MyFooter implements ILoadLayout {
     private Animation mRotateDownAnimation;
 
     private View mLoadView;
-    private SmoothScrollHelper runnable;
+    private SmoothTranslationYHelper runnable;
 
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
@@ -52,23 +55,23 @@ public class MyFooter implements ILoadLayout {
         float  barPad      = (float) (height * .52);
         Paint  paint       = new Paint();
         paint.setAntiAlias(true);
-        path.moveTo(arrowPoint + arrowWidth / 2, 0);
-        path.lineTo(arrowPoint + arrowWidth, arrowHeight);
-        path.lineTo((float) (arrowPoint + arrowWidth * .75), arrowHeight);
+        path.moveTo(arrowPoint + arrowWidth / 2, height);
+        path.lineTo(arrowPoint + arrowWidth, height - arrowHeight);
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), height - arrowHeight);
         path.lineTo((float) (arrowPoint + arrowWidth * .75), height - barPad);
         path.lineTo((float) (arrowPoint + arrowWidth * .25), height - barPad);
-        path.lineTo((float) (arrowPoint + arrowWidth * .25), arrowHeight);
-        path.lineTo(arrowPoint, arrowHeight);
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), height - arrowHeight);
+        path.lineTo(arrowPoint, height - arrowHeight);
         path.close();
-        path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .10));
-        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .10));
-        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .35));
-        path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .35));
+        path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .20));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .20));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .45));
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .45));
         path.close();
-        path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .45));
-        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .45));
-        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .63));
-        path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .63));
+        path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .55));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .55));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .73));
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .73));
         path.close();
         paint.setStyle(Paint.Style.STROKE);
         paint.setStyle(Paint.Style.FILL);
@@ -77,20 +80,19 @@ public class MyFooter implements ILoadLayout {
         return bmp;
     }
 
-
     @Override
-    public View loadView(SwipeToRefreshLayout swipeToRefreshLayout) {
+    public View getLoadView() {
         return mLoadView;
     }
 
     @Override
-    public int maxDistance() {
+    public int refreshHeight() {
         return 220;
     }
 
     @Override
-    public void onAttach(SwipeToRefreshLayout swipeToRefreshLayout) {
-        Context context = swipeToRefreshLayout.getContext();
+    public void onAttach(SwipeToRefreshLayout layout) {
+        Context context = layout.getContext();
         if (mLoadView == null) {
             //箭头翻转动画
             mRotateUpAnimation = new RotateAnimation(0,
@@ -118,57 +120,62 @@ public class MyFooter implements ILoadLayout {
             arrow = (ImageView) mLoadView.findViewById(R.id.refresh_arrow);
             arrow.setImageBitmap(bmArrow);
             text = (TextView) mLoadView.findViewById(R.id.refresh_msg);
-            text.setText(TEXT_PULL_TO_LOAD_MORE);
+            text.setText(TEXT_PULL_TO_REFRESH);
             progress = (ProgressBar) mLoadView.findViewById(R.id.refresh_loading);
             progress.setVisibility(View.GONE);
 
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                                                                       maxDistance());
-            lp.gravity = Gravity.BOTTOM;
-            swipeToRefreshLayout.addView(mLoadView, -1, lp);
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.MarginLayoutParams.MATCH_PARENT,
+                                                                       refreshHeight());
+            lp.gravity = Gravity.TOP;
+            mLoadView.setLayoutParams(lp);
+            layout.addView(mLoadView);
         }
     }
 
     @Override
-    public void onLayout(SwipeToRefreshLayout root, boolean changed, int left, int top, int right, int bottom) {
+    public void onLayout(SwipeToRefreshLayout layout, boolean changed, float offset, int left, int top, int right, int bottom) {
         if (mLoadView != null) {
-            mLoadView.bringToFront();
             mLoadView.layout(
-                mLoadView.getLeft(),
-                mLoadView.getTop() + maxDistance(),
-                mLoadView.getRight(),
-                mLoadView.getBottom() + maxDistance()
+                left,
+                0,
+                right,
+                refreshHeight()
             );
+            layout.getContentView().bringToFront();
         }
+    }
+
+    @Override
+    public void onDetach(SwipeToRefreshLayout layout) {
+        layout.removeView(getLoadView());
     }
 
     @Override
     public void onDragEvent(SwipeToRefreshLayout swipeToRefreshLayout, float offset) {
-        text.setText(TEXT_PULL_TO_LOAD_MORE);
+        text.setText(TEXT_PULL_TO_REFRESH);
         progress.setVisibility(View.GONE);
         arrow.setVisibility(View.VISIBLE);
         if (arrow.getAnimation() != mRotateDownAnimation) {
             arrow.clearAnimation();
             arrow.startAnimation(mRotateDownAnimation);
         }
-        swipeToRefreshLayout.scrollTo(0, (int) offset);
+        ViewCompat.setTranslationY(swipeToRefreshLayout.getContentView(), offset);
     }
 
     @Override
     public void onOverDragging(SwipeToRefreshLayout swipeToRefreshLayout, float offset) {
-        text.setText(TEXT_RELEASE_TO_LOAD_MORE);
+        text.setText(TEXT_RELEASE_TO_REFRESH);
         progress.setVisibility(View.GONE);
         arrow.setVisibility(View.VISIBLE);
         if (arrow.getAnimation() != mRotateUpAnimation) {
             arrow.clearAnimation();
             arrow.startAnimation(mRotateUpAnimation);
         }
-
-        swipeToRefreshLayout.scrollTo(0, (int) offset);
+        ViewCompat.setTranslationY(swipeToRefreshLayout.getContentView(), offset);
     }
 
     @Override
-    public void onRefreshing(SwipeToRefreshLayout strl) {
+    public void onRefreshing(final SwipeToRefreshLayout strl) {
         text.setText(TEXT_REFRESHING);
         arrow.clearAnimation();
         arrow.setVisibility(View.GONE);
@@ -177,10 +184,11 @@ public class MyFooter implements ILoadLayout {
         if (runnable != null) {
             runnable.stop();
         }
-        runnable = new SmoothScrollHelper(strl,
-                                          strl.getScrollY(),
-                                          maxDistance(),
-                                          null);
+        View v = strl.getContentView();
+        runnable = new SmoothTranslationYHelper(v,
+                                                (int) ViewCompat.getY(v),
+                                                refreshHeight(),
+                                                null);
         strl.post(runnable);
     }
 
@@ -193,10 +201,12 @@ public class MyFooter implements ILoadLayout {
         if (runnable != null) {
             runnable.stop();
         }
-        runnable = new SmoothScrollHelper(strl,
-                                          strl.getScrollY(),
-                                          0,
-                                          null);
+        View v = strl.getContentView();
+        runnable = new SmoothTranslationYHelper(v,
+                                                (int) ViewCompat.getY(v),
+                                                0,
+                                                null);
         strl.post(runnable);
     }
+
 }
