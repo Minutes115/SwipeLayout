@@ -1,4 +1,4 @@
-package com.minutes.swipelayout.temp;
+package com.minutes.swipelayout.temp.view;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,15 +21,18 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.minutes.swipelayout.R;
+import com.minutes.swipelayout.temp.Layout;
+import com.minutes.swipelayout.temp.Measure;
+import com.minutes.swipelayout.temp.SwipeLayout;
 
 /**
- * <p>Description  : MaterialHeader.</p>
+ * <p>Description  : TestHeader.</p>
  * <p/>
  * <p>Author       : wangchao.</p>
- * <p>Date         : 15/11/12.</p>
- * <p>Time         : 上午10:29.</p>
+ * <p>Date         : 15/11/10.</p>
+ * <p>Time         : 下午4:22.</p>
  */
-public class MaterialHeader extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
+public class PullToRefreshHeader extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
     public static final int NORMAL = 0;
     public static final int RELEASE = 1;
     public static final int REFRESHING = 2;
@@ -48,29 +52,24 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     private Animation mRotateDownAnimation;
 
     private int state = NORMAL;
-    private boolean isHeader;
     private int headerHeight;
 
-    public void setHeader(boolean isHeader){
-        this.isHeader = isHeader;
-    }
-
-    public MaterialHeader(Context context) {
+    public PullToRefreshHeader(Context context) {
         super(context);
         init();
     }
 
-    public MaterialHeader(Context context, AttributeSet attrs) {
+    public PullToRefreshHeader(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    @TargetApi(11) public MaterialHeader(Context context, AttributeSet attrs, int defStyleAttr) {
+    @TargetApi(11) public PullToRefreshHeader(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
 
-    @TargetApi(21) public MaterialHeader(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    @TargetApi(21) public PullToRefreshHeader(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
@@ -85,14 +84,13 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     }
 
     private void init(){
-        this.isHeader = true;
         this.headerHeight = dip2px(60);
 
         View root = LayoutInflater.from(getContext()).inflate(R.layout.layout_refresh_loading, this);
         arrow = (ImageView) root.findViewById(R.id.refresh_arrow);
-        arrow.setImageBitmap(getArrowBitmap(isHeader));
+        arrow.setImageBitmap(getArrowBitmap());
         text = (TextView) root.findViewById(R.id.refresh_msg);
-        text.setVisibility(GONE);
+        text.setText(TEXT_PULL_TO_REFRESH);
         progress = (ProgressBar) root.findViewById(R.id.refresh_loading);
         progress.setVisibility(GONE);
         //箭头翻转动画
@@ -113,7 +111,7 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
      */
-    private Bitmap getArrowBitmap(boolean isHeader) {
+    private Bitmap getArrowBitmap() {
         int    width       = (int) (headerHeight * .6);
         int    height      = (int) (headerHeight * .6);
         Bitmap bmp         = Bitmap.createBitmap(width, width, Bitmap.Config.ARGB_8888);
@@ -125,46 +123,24 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
         float  barPad      = (float) (height * .52);
         Paint paint       = new Paint();
         paint.setAntiAlias(true);
-        if (isHeader) {
-            path.moveTo(arrowPoint + arrowWidth / 2, height);
-            path.lineTo(arrowPoint + arrowWidth, height - arrowHeight);
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), height - arrowHeight);
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), height - barPad);
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), height - barPad);
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), height - arrowHeight);
-            path.lineTo(arrowPoint, height - arrowHeight);
-            path.close();
-            path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .20));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .20));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .45));
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .45));
-            path.close();
-            path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .55));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .55));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .73));
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .73));
-            path.close();
-        }
-        else {
-            path.moveTo(arrowPoint + arrowWidth / 2, 0);
-            path.lineTo(arrowPoint + arrowWidth, arrowHeight);
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), arrowHeight);
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), height - barPad);
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), height - barPad);
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), arrowHeight);
-            path.lineTo(arrowPoint, arrowHeight);
-            path.close();
-            path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .10));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .10));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .35));
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .35));
-            path.close();
-            path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .45));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .45));
-            path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (height - barPad + barPad * .63));
-            path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (height - barPad + barPad * .63));
-            path.close();
-        }
+        path.moveTo(arrowPoint + arrowWidth / 2, height);
+        path.lineTo(arrowPoint + arrowWidth, height - arrowHeight);
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), height - arrowHeight);
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), height - barPad);
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), height - barPad);
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), height - arrowHeight);
+        path.lineTo(arrowPoint, height - arrowHeight);
+        path.close();
+        path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .20));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .20));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .45));
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .45));
+        path.close();
+        path.moveTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .55));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .55));
+        path.lineTo((float) (arrowPoint + arrowWidth * .25), (float) (barPad - barPad * .73));
+        path.lineTo((float) (arrowPoint + arrowWidth * .75), (float) (barPad - barPad * .73));
+        path.close();
         paint.setStyle(Paint.Style.STROKE);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.parseColor("#ffadada9"));
@@ -178,24 +154,16 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
         }
         switch (state) {
             case NORMAL:
-                if (isHeader) {
+                    text.setText(TEXT_PULL_TO_REFRESH);
                     progress.setVisibility(GONE);
                     arrow.setVisibility(VISIBLE);
                     if (arrow.getAnimation() == mRotateUpAnimation) {
                         arrow.clearAnimation();
                         arrow.startAnimation(mRotateDownAnimation);
                     }
-                }
-                else {
-                    progress.setVisibility(GONE);
-                    arrow.setVisibility(VISIBLE);
-                    if (arrow.getAnimation() == mRotateUpAnimation) {
-                        arrow.clearAnimation();
-                        arrow.startAnimation(mRotateDownAnimation);
-                    }
-                }
                 break;
             case REFRESHING:
+                text.setText(TEXT_REFRESHING);
                 arrow.clearAnimation();
                 arrow.setVisibility(GONE);
                 progress.setVisibility(VISIBLE);
@@ -206,18 +174,11 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
                 progress.setVisibility(GONE);
                 break;
             case RELEASE:
-                if (isHeader) {
-                    progress.setVisibility(GONE);
-                    arrow.setVisibility(VISIBLE);
-                    arrow.clearAnimation();
-                    arrow.startAnimation(mRotateUpAnimation);
-                }
-                else {
-                    progress.setVisibility(GONE);
-                    arrow.setVisibility(VISIBLE);
-                    arrow.clearAnimation();
-                    arrow.startAnimation(mRotateUpAnimation);
-                }
+                text.setText(TEXT_RELEASE_TO_REFRESH);
+                progress.setVisibility(GONE);
+                arrow.setVisibility(VISIBLE);
+                arrow.clearAnimation();
+                arrow.startAnimation(mRotateUpAnimation);
                 break;
         }
         this.state = state;
@@ -226,6 +187,35 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     @Override
     public int viewType() {
         return HEADER;
+    }
+
+    @NonNull @Override public Measure onChildMeasure(SwipeLayout parent, int widthMeasureSpec, int heightMeasureSpec) {
+        parent.superMeasureChildWithMargins(this, widthMeasureSpec, 0, heightMeasureSpec, 0);
+
+        MarginLayoutParams lp = (MarginLayoutParams) getLayoutParams();
+        int mHeaderHeight = getMeasuredHeight() + lp.topMargin + lp.bottomMargin;
+        return new Measure(0, mHeaderHeight);
+    }
+
+    @NonNull @Override public Layout onChildLayout(SwipeLayout parent, int offset, int pl, int pt, int pr, int pb) {
+        final int paddingLeft = parent.getPaddingLeft();
+        final int paddingTop  = parent.getPaddingTop();
+
+        MarginLayoutParams lp = (MarginLayoutParams) getLayoutParams();
+
+        final int left   = paddingLeft + lp.leftMargin;
+        final int top    = paddingTop + lp.topMargin + offset - parent.getHeaderMeasure().height;
+        final int right  = left + getMeasuredWidth();
+        final int bottom = top + getMeasuredHeight();
+
+        layout(left, top, right, bottom);
+        return new Layout(left, top, right, bottom);
+    }
+
+    @Override
+    public void onMove(SwipeLayout parent, int delta) {
+        parent.contentScrollY(delta);
+        parent.childScrollY(this, delta);
     }
 
     @Override
@@ -244,7 +234,7 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
         postDelayed(new Runnable() {
             @Override
             public void run() {
-                parent.setRefresh(false);
+               parent.setRefresh(false);
             }
         }, 2000);
     }
@@ -263,16 +253,5 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
         setState(RESET);
     }
 
-    public static class MaterialFooter extends PullToRefreshHeader{
-
-        public MaterialFooter(Context context) {
-            super(context);
-            setHeader(false);
-        }
-
-        @Override
-        public int viewType() {
-            return FOOTER;
-        }
-    }
 }
+

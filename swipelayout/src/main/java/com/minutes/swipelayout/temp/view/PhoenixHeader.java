@@ -1,4 +1,4 @@
-package com.minutes.swipelayout.temp;
+package com.minutes.swipelayout.temp.view;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -25,6 +25,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.minutes.swipelayout.R;
+import com.minutes.swipelayout.temp.ILoadLayout;
+import com.minutes.swipelayout.temp.Layout;
+import com.minutes.swipelayout.temp.Measure;
+import com.minutes.swipelayout.temp.SwipeLayout;
 
 /**
  * <p>Description  : PhoenixHeader.</p>
@@ -33,7 +37,7 @@ import com.minutes.swipelayout.R;
  * <p>Date         : 15/11/12.</p>
  * <p>Time         : 上午8:36.</p>
  */
-public class PhoenixHeader extends LinearLayout implements ILoadLayout{
+public class PhoenixHeader extends LinearLayout implements ILoadLayout {
     private SunRefreshView sunRefreshView;
     private int mTotalDragDistance;
 
@@ -74,6 +78,23 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout{
     @Override
     public int viewType() {
         return HEADER;
+    }
+
+    @NonNull
+    @Override
+    public Measure onChildMeasure(SwipeLayout parent, int widthMeasureSpec, int heightMeasureSpec) {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public Layout onChildLayout(SwipeLayout parent, int offset, int pl, int pt, int pr, int pb) {
+        return null;
+    }
+
+    @Override
+    public void onMove(SwipeLayout parent, int delta) {
+
     }
 
     @Override

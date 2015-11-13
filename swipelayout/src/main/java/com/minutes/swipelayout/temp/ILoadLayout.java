@@ -1,6 +1,7 @@
 package com.minutes.swipelayout.temp;
 
 import android.support.annotation.IntDef;
+import android.support.annotation.NonNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -27,6 +28,12 @@ public interface ILoadLayout {
      * 视图类型 Header / Footer
      */
     @ILoadLayout.Type int viewType();
+
+    @NonNull Measure onChildMeasure(SwipeLayout parent, int widthMeasureSpec, int heightMeasureSpec);
+
+    @NonNull Layout onChildLayout(SwipeLayout parent, int offset, int pl, int pt, int pr, int pb);
+
+    void onMove(SwipeLayout parent, int delta);
 
     /**
      * 保持刷新时的高度
