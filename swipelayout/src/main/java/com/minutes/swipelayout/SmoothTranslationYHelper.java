@@ -1,17 +1,19 @@
 package com.minutes.swipelayout;
 
+import android.support.v4.view.ViewCompat;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 
 /**
  * User: LiangLong
- * Date: 2015-11-09
- * Time: 14:34
+ * Date: 2015-11-13
+ * Time: 16:17
  * Note: com.minutes.swipelayout
  */
-public class SmoothScrollHelper implements Runnable {
+public class SmoothTranslationYHelper implements Runnable{
     public static final long DURING = 300;
+
     public static final int FPS = 60;
 
     private Interpolator interpolator;
@@ -20,10 +22,10 @@ public class SmoothScrollHelper implements Runnable {
     private int toY;
     private int currentY;
 
-    private long startTime = -1;
+    private long startTime = System.currentTimeMillis();
     private boolean isContinue = true;
 
-    public SmoothScrollHelper(View target, int fromY, int toY, Interpolator interpolator) {
+    public SmoothTranslationYHelper(View target, int fromY, int toY, Interpolator interpolator) {
         this.target = target;
         this.currentY = toY - 1;
         this.fromY = fromY;
@@ -36,7 +38,7 @@ public class SmoothScrollHelper implements Runnable {
 
     @Override
     public void run() {
-        if (startTime == -1){
+        if (startTime == -1) {
             startTime = System.currentTimeMillis();
         } else {
             long normalizedTime = (1000 * (System.currentTimeMillis() - startTime)) / DURING;
@@ -44,7 +46,7 @@ public class SmoothScrollHelper implements Runnable {
 
             int deltaY = Math.round((fromY - toY) * interpolator.getInterpolation(normalizedTime / 1000f));
             currentY = fromY - deltaY;
-            target.scrollTo(0, currentY);
+            ViewCompat.setTranslationY(target, currentY);
         }
         if (isContinue && currentY != toY) {
             target.postDelayed(this, 1000 / FPS);
@@ -57,4 +59,5 @@ public class SmoothScrollHelper implements Runnable {
         isContinue = false;
         target.removeCallbacks(this);
     }
+
 }

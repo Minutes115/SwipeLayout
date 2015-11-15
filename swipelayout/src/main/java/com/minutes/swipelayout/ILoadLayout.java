@@ -11,30 +11,75 @@ import android.view.View;
 public interface ILoadLayout {
 
     /**
-     * @return  加载的View
+     * @return 加载的View
      */
-    View loadView(SwipeToRefreshLayout swipeToRefreshLayout);
+    View getLoadView();
 
     /**
-     * @return  最大拉动距离,超过这个距离触发onOverDragging函数
+     * @return 最大拉动距离, 超过这个距离触发onOverDragging函数(可以视作是LoadView的高度)
      */
-    int maxDistance();
+    int refreshHeight();
 
-    void onAttach(SwipeToRefreshLayout swipeToRefreshLayout);
+    /**
+     * 当LoadView添加到{@link SwipeToRefreshLayout}时触发,此时应该完成LoadView的初始化操作
+     *
+     * @param layout
+     */
+    void onAttach(SwipeToRefreshLayout layout);
 
-    void onLayout(SwipeToRefreshLayout root,
+    /**
+     * 当LoadView从{@link SwipeToRefreshLayout}移除时触发(比如切换header效果的时候)
+     *
+     * @param layout
+     */
+    void onDetach(SwipeToRefreshLayout layout);
+
+    /**
+     * 摆放 getLoadView() 的位置
+     *
+     * @param layout
+     * @param changed
+     * @param left
+     * @param top
+     * @param right
+     * @param bottom
+     */
+    void onLayout(SwipeToRefreshLayout layout,
                   boolean changed,
+                  float offset,
                   int left,
                   int top,
                   int right,
                   int bottom);
 
-    void onDragEvent(SwipeToRefreshLayout swipeToRefreshLayout, float offset);
+    /**
+     * 正常情况下的滑动
+     *
+     * @param layout
+     * @param offset
+     */
+    void onDragEvent(SwipeToRefreshLayout layout, float offset);
 
-    void onOverDragging(SwipeToRefreshLayout swipeToRefreshLayout, float offset);
+    /**
+     * 拉动超过自身高度时触发
+     *
+     * @param layout
+     * @param offset
+     */
+    void onOverDragging(SwipeToRefreshLayout layout, float offset);
 
-    void onRefreshing(SwipeToRefreshLayout swipeToRefreshLayout);
+    /**
+     * 刷新或者加载更多时触发
+     *
+     * @param layout
+     */
+    void onRefreshing(SwipeToRefreshLayout layout);
 
-    void stopRefresh(SwipeToRefreshLayout swipeToRefreshLayout);
+    /**
+     * 停止刷新(也就是需要复位时触发)
+     *
+     * @param layout
+     */
+    void stopRefresh(SwipeToRefreshLayout layout);
 
 }

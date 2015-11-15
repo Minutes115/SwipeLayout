@@ -11,11 +11,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.minutes.swipelayout.temp.MaterialHeader;
-import com.minutes.swipelayout.temp.PhoenixHeader;
-import com.minutes.swipelayout.temp.PullToRefreshHeader;
-import com.minutes.swipelayout.temp.ScrollMode;
 import com.minutes.swipelayout.temp.SwipeLayout;
+import com.minutes.swipelayout.temp.view.MaterialFooter;
+import com.minutes.swipelayout.temp.view.MaterialHeader;
+import com.minutes.swipelayout.temp.view.PhoenixFooter;
+import com.minutes.swipelayout.temp.view.PhoenixHeader;
+import com.minutes.swipelayout.temp.view.PullToRefreshFooter;
+import com.minutes.swipelayout.temp.view.PullToRefreshHeader;
 
 import java.util.List;
 import java.util.Vector;
@@ -97,10 +99,9 @@ public class TempTestActivity extends AppCompatActivity {
             MaterialHeader header = new MaterialHeader(this);
             swipeLayout.setHeaderView(header);
 
-            MaterialHeader.MaterialFooter footer = new MaterialHeader.MaterialFooter(this);
+            MaterialFooter footer = new MaterialFooter(this);
             swipeLayout.setFooterView(footer);
 
-            swipeLayout.setScrollMode(ScrollMode.SCROLL_FONT);
             return true;
         }
 
@@ -108,17 +109,19 @@ public class TempTestActivity extends AppCompatActivity {
             PullToRefreshHeader head = new PullToRefreshHeader(this);
             swipeLayout.setHeaderView(head);
 
-            PullToRefreshHeader.PullToRefreshFooter footer = new PullToRefreshHeader.PullToRefreshFooter(this);
+            PullToRefreshFooter footer = new PullToRefreshFooter(this);
             swipeLayout.setFooterView(footer);
 
-            swipeLayout.setScrollMode(ScrollMode.SCROLL_FOLLOW);
             return true;
         }
 
         if (id == R.id.stylePhoenix) {
             PhoenixHeader head = new PhoenixHeader(this);
             swipeLayout.setHeaderView(head);
-            swipeLayout.setScrollMode(ScrollMode.SCROLL_BACK);
+
+            PhoenixFooter footer = new PhoenixFooter(this);
+            swipeLayout.setFooterView(footer);
+
             return true;
         }
 
