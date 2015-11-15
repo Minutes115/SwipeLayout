@@ -38,8 +38,9 @@ import com.minutes.swipelayout.temp.SwipeLayout;
  * <p>Time         : 上午8:36.</p>
  */
 public class PhoenixHeader extends LinearLayout implements ILoadLayout {
-    private SunRefreshView sunRefreshView;
-    private int mTotalDragDistance;
+    protected SunRefreshView sunRefreshView;
+    protected float mTotalDragDistance;
+    private int maxDistance;
 
     public PhoenixHeader(Context context) {
         super(context);
@@ -62,10 +63,11 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
     }
 
     private void init(){
-        mTotalDragDistance = convertDpToPixel(getContext(), 120);
+        mTotalDragDistance = convertDpToPixel(getContext(), 100);
+        maxDistance = (int) (mTotalDragDistance + 20);
         sunRefreshView = new SunRefreshView(getContext());
 
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mTotalDragDistance);
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, maxDistance);
         ImageView imageView = new ImageView(getContext());
         imageView.setLayoutParams(params);
         imageView.setImageDrawable(sunRefreshView);
@@ -83,43 +85,71 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
     @NonNull
     @Override
     public Measure onChildMeasure(SwipeLayout parent, int widthMeasureSpec, int heightMeasureSpec) {
-        return null;
+        parent.superMeasureChildWithMargins(this, widthMeasureSpec, 0, heightMeasureSpec, 0);
+
+        MarginLayoutParams lp = (MarginLayoutParams) getLayoutParams();
+        int mHeaderHeight = getMeasuredHeight() + lp.topMargin + lp.bottomMargin;
+
+        return new Measure(0, mHeaderHeight);
     }
 
     @NonNull
     @Override
     public Layout onChildLayout(SwipeLayout parent, int offset, int pl, int pt, int pr, int pb) {
-        return null;
+        final int paddingLeft = parent.getPaddingLeft();
+        final int paddingTop  = parent.getPaddingTop();
+
+        MarginLayoutParams lp = (MarginLayoutParams) getLayoutParams();
+
+        final int left   = paddingLeft + lp.leftMargin;
+        final int top    = paddingTop + lp.topMargin;
+        final int right  = left + getMeasuredWidth();
+        final int bottom = top + getMeasuredHeight();
+
+        parent.bringContentViewToFont();
+        layout(left, top, right, bottom);
+        return new Layout(left, top, right, bottom);
     }
 
     @Override
-    public void onMove(SwipeLayout parent, int delta) {
-
+    public void onTouchMove(SwipeLayout parent, int delta) {
+        if (parent.currContentViewOffset() > maxDistance){
+            return;
+        }
+        parent.contentScrollY(delta);
     }
 
     @Override
     public int refreshHeight() {
-        return 0;
+        return ((int) mTotalDragDistance);
     }
 
     @Override
     public boolean canDoRefresh(SwipeLayout parent, int pullDistance) {
-        return false;
+        return pullDistance > mTotalDragDistance;
     }
 
     @Override
-    public void startRefreshing(SwipeLayout parent) {
-
+    public void startRefreshing(final SwipeLayout parent) {
+        sunRefreshView.start();
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                parent.setRefresh(false);
+            }
+        }, 2000);
     }
 
     @Override
     public void pullOffset(SwipeLayout parent, int delta, int offset) {
-
+        float percent = Math.min(1f, offset / mTotalDragDistance);
+        sunRefreshView.setPercent(percent, true);
+        sunRefreshView.offsetTopAndBottom(delta);
     }
 
     @Override
     public void completeRefresh(SwipeLayout parent) {
-
+        sunRefreshView.stop();
     }
 
     public int convertDpToPixel(Context context, int dp) {
@@ -208,7 +238,7 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
             mSunLeftOffset = 0.3f * (float) mScreenWidth;
             mSunTopOffset = (mTotalDragDistance * 0.1f);
 
-            mTop = -mTotalDragDistance;
+            mTop = -(int)mTotalDragDistance;
 
             createBitmaps();
         }
@@ -413,6 +443,8 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
             clearAnimation();
             isRefreshing = false;
             resetOriginals();
+            mTop = -(int)mTotalDragDistance;
+
         }
 
         private void setupAnimations() {

@@ -2,6 +2,10 @@
       xmlns:app="http://schemas.android.com/apk/res-auto"
       xmlns:tools="http://schemas.android.com/tools"
       tools:context=".MainActivity">
+    <item android:id="@+id/jump"
+          android:orderInCategory="100"
+          android:title="jump"
+          app:showAsAction="never"/>
     <item android:id="@+id/stylePullToRefresh"
           android:orderInCategory="100"
           android:title="Style_PullToRefresh"

@@ -33,7 +33,7 @@ public interface ILoadLayout {
 
     @NonNull Layout onChildLayout(SwipeLayout parent, int offset, int pl, int pt, int pr, int pb);
 
-    void onMove(SwipeLayout parent, int delta);
+    void onTouchMove(SwipeLayout parent, int delta);
 
     /**
      * 保持刷新时的高度

@@ -47,7 +47,7 @@ public class SwipeLayout extends ViewGroup{
 
     private ScrollHelper mScrollerHelper;
     private ScrollerImpl mScroller;
-    private int mScrollMode;
+    private boolean mContentScrollable;
 
     private SwipeLayoutRefreshListener mListener;
 
@@ -75,8 +75,6 @@ public class SwipeLayout extends ViewGroup{
         mScroller       = new ScrollerImpl(getContext());
         mScrollerHelper = new ScrollHelper(FRICTION);
 
-        //default mode
-        mScrollMode     = ScrollMode.SCROLL_FOLLOW;
         touchSlop       = ViewConfiguration.get(getContext()).getScaledTouchSlop();
 
     }
@@ -116,7 +114,10 @@ public class SwipeLayout extends ViewGroup{
             }
         }
 
-        setScrollMode(mScrollMode);
+        if (mContentView != null){
+            mContentView.bringToFront();
+        }
+
         super.onFinishInflate();
     }
 
@@ -197,11 +198,9 @@ public class SwipeLayout extends ViewGroup{
         int offset = mScrollerHelper.getCurrOffsetY();
         if (mContentView != null){
             MarginLayoutParams lp = (MarginLayoutParams) mContentView.getLayoutParams();
-            //is font mode
-            boolean isFont = mScrollMode == ScrollMode.SCROLL_FONT;
 
             final int left = paddingLeft + lp.leftMargin;
-            final int top = paddingTop + lp.topMargin + (isFont ? 0 : offset);
+            final int top = paddingTop + lp.topMargin + (mContentScrollable ? offset : 0);
             final int right = left + mContentView.getMeasuredWidth();
             final int bottom = top + mContentView.getMeasuredHeight();
             if (!isRefreshing){
@@ -237,6 +236,7 @@ public class SwipeLayout extends ViewGroup{
         switch (action){
             case MotionEvent.ACTION_DOWN:{
                 isDragging = false;
+                mContentScrollable = false;
                 mScrollerHelper.setInitialY(ev.getY());
             } break;
             case MotionEvent.ACTION_MOVE:{
@@ -314,10 +314,10 @@ public class SwipeLayout extends ViewGroup{
         mScrollerHelper.setCurrOffsetY(currOffset);
 
         if (mHeaderView != null && mDirection == PULL_DIRECTION_DOWN){
-            mHeaderView.onMove(this, delta);
+            mHeaderView.onTouchMove(this, delta);
         }
         if (mFooterView != null && mDirection == PULL_DIRECTION_UP){
-            mFooterView.onMove(this, delta);
+            mFooterView.onTouchMove(this, delta);
         }
 
     }
@@ -353,9 +353,18 @@ public class SwipeLayout extends ViewGroup{
     }
 
     /**
-     * 获取当前视图偏移量
+     * mContent to font
      */
-    private int currContentViewOffset(){
+    public void bringContentViewToFont(){
+        if (mContentView != null){
+            mContentView.bringToFront();
+        }
+    }
+
+    /**
+     * 获取当前视图偏移量 (Abs)
+     */
+    public int currContentViewOffset(){
         return mScrollerHelper.getAbsCurrOffsetY();
     }
 
@@ -387,6 +396,7 @@ public class SwipeLayout extends ViewGroup{
      */
     public void contentScrollY(int offset){
         if (mContentView != null) {
+            mContentScrollable = true;
             mContentView.offsetTopAndBottom(offset);
             if (!isRefreshing){
                 ILoadLayout iLoadLayout = ILoadLayout();
@@ -551,20 +561,20 @@ public class SwipeLayout extends ViewGroup{
      * 设置滑动模式{@link ScrollMode}
      */
     public void setScrollMode(@ScrollMode.Mode int scrollMode){
-        this.mScrollMode = scrollMode;
-        if (mScrollMode == ScrollMode.SCROLL_FONT){
-            if (mHeaderView != null){
-                convert(mHeaderView).bringToFront();
-            }
-            if (mFooterView != null){
-                convert(mFooterView).bringToFront();
-            }
-        }
-        else {
-            if (mContentView != null){
-                mContentView.bringToFront();
-            }
-        }
+//        this.mScrollMode = scrollMode;
+//        if (mScrollMode == ScrollMode.SCROLL_FONT){
+//            if (mHeaderView != null){
+//                convert(mHeaderView).bringToFront();
+//            }
+//            if (mFooterView != null){
+//                convert(mFooterView).bringToFront();
+//            }
+//        }
+//        else {
+//            if (mContentView != null){
+//                mContentView.bringToFront();
+//            }
+//        }
     }
 
     /**

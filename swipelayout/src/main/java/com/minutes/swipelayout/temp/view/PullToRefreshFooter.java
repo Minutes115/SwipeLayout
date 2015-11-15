@@ -218,7 +218,7 @@ public class PullToRefreshFooter extends LinearLayout implements com.minutes.swi
     }
 
     @Override
-    public void onMove(SwipeLayout parent, int delta) {
+    public void onTouchMove(SwipeLayout parent, int delta) {
         parent.contentScrollY(delta);
         parent.childScrollY(this, delta);
     }

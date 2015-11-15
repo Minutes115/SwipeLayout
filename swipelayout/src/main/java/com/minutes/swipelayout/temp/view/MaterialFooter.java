@@ -15,13 +15,13 @@ import com.minutes.swipelayout.temp.Measure;
 import com.minutes.swipelayout.temp.SwipeLayout;
 
 /**
- * <p>Description  : MaterialHeader.</p>
+ * <p>Description  : MaterialFooter.</p>
  * <p/>
  * <p>Author       : wangchao.</p>
- * <p>Date         : 15/11/12.</p>
- * <p>Time         : 上午10:29.</p>
+ * <p>Date         : 15/11/14.</p>
+ * <p>Time         : 上午10:04.</p>
  */
-public class MaterialHeader extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
+public class MaterialFooter extends LinearLayout implements com.minutes.swipelayout.temp.ILoadLayout {
     private static final int CIRCLE_DIAMETER = 40;
     private static final int CIRCLE_BG_LIGHT = 0xFFFAFAFA;
 
@@ -38,22 +38,24 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
         }
     };
 
-    public MaterialHeader(Context context) {
+    public MaterialFooter(Context context) {
         super(context);
         init();
     }
 
-    public MaterialHeader(Context context, AttributeSet attrs) {
+    public MaterialFooter(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    @TargetApi(11) public MaterialHeader(Context context, AttributeSet attrs, int defStyleAttr) {
+    @TargetApi(11)
+    public MaterialFooter(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
 
-    @TargetApi(21) public MaterialHeader(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    @TargetApi(21)
+    public MaterialFooter(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
@@ -63,17 +65,17 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
         return (int) (dpValue * scale + 0.5f);
     }
 
-    public int dip2px(float dpValue){
+    public int dip2px(float dpValue) {
         return dip2px(getContext(), dpValue);
     }
 
-    private void init(){
+    private void init() {
         refreshHeight = dip2px(80);
         mDrawable = new MaterialProgressDrawable(getContext(), this);
         mDrawable.setBackgroundColor(CIRCLE_BG_LIGHT);
         mDrawable.setCallback(this);
 
-        CircleImageView mCircleView = new CircleImageView(getContext(), CIRCLE_BG_LIGHT, CIRCLE_DIAMETER/2);
+        CircleImageView mCircleView = new CircleImageView(getContext(), CIRCLE_BG_LIGHT, CIRCLE_DIAMETER / 2);
         mCircleView.setImageDrawable(mDrawable);
 
         addView(mCircleView);
@@ -85,7 +87,7 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
 
     @Override
     public int viewType() {
-        return HEADER;
+        return FOOTER;
     }
 
     @NonNull
@@ -102,16 +104,15 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     @Override
     public Layout onChildLayout(SwipeLayout parent, int offset, int pl, int pt, int pr, int pb) {
         final int paddingLeft = parent.getPaddingLeft();
-        final int paddingTop  = parent.getPaddingTop();
+        final int paddingTop = parent.getPaddingTop();
 
         MarginLayoutParams lp = (MarginLayoutParams) getLayoutParams();
 
-        final int left   = paddingLeft + lp.leftMargin;
-        final int top    = paddingTop + lp.topMargin + offset - parent.getHeaderMeasure().height;
-        final int right  = left + getMeasuredWidth();
+        final int left = paddingLeft + lp.leftMargin;
+        final int top = paddingTop + lp.topMargin + offset + parent.getContentMeasure().height;
+        final int right = left + getMeasuredWidth();
         final int bottom = top + getMeasuredHeight();
 
-        bringToFront();
         layout(left, top, right, bottom);
         return new Layout(left, top, right, bottom);
     }

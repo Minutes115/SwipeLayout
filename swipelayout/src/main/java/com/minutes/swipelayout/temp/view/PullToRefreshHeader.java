@@ -208,12 +208,13 @@ public class PullToRefreshHeader extends LinearLayout implements com.minutes.swi
         final int right  = left + getMeasuredWidth();
         final int bottom = top + getMeasuredHeight();
 
+        bringToFront();
         layout(left, top, right, bottom);
         return new Layout(left, top, right, bottom);
     }
 
     @Override
-    public void onMove(SwipeLayout parent, int delta) {
+    public void onTouchMove(SwipeLayout parent, int delta) {
         parent.contentScrollY(delta);
         parent.childScrollY(this, delta);
     }
