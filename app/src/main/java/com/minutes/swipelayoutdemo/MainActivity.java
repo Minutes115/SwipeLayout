@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import com.minutes.swipelayout.MaterialHeader;
 import com.minutes.swipelayout.PhoenixHeader;
+import com.minutes.swipelayout.PullToLoadMoreFooter;
 import com.minutes.swipelayout.PullToRefreshHeader;
 import com.minutes.swipelayout.SwipeToRefreshLayout;
 import com.minutes.swipelayout.SwipeToRefreshListener;
@@ -58,9 +59,7 @@ public class MainActivity extends AppCompatActivity implements SwipeToRefreshLis
         mRecyclerView.setAdapter(new DemoAdapter());
 
         swipeLayout = (SwipeToRefreshLayout) findViewById(R.id.swipeLayout);
-        swipeLayout.setMode(SwipeToRefreshLayout.MODE_PULL_DOWN_TO_REFRESH);
         swipeLayout.setOnRefreshListener(this);
-//        swipeLayout.setRefreshing(true);
     }
 
     @Override
@@ -118,7 +117,6 @@ public class MainActivity extends AppCompatActivity implements SwipeToRefreshLis
         @Override
         public void onClick(View v) {
             Toast.makeText(v.getContext(), text1.getText(), Toast.LENGTH_SHORT).show();
-//            startActivity(new Intent(MainActivity.this, TempTestActivity.class));
         }
     }
 
@@ -138,17 +136,21 @@ public class MainActivity extends AppCompatActivity implements SwipeToRefreshLis
         if (id == R.id.styleMaterial) {
             MaterialHeader header = new MaterialHeader();
             swipeLayout.setHeader(header);
+            swipeLayout.setMode(SwipeToRefreshLayout.MODE_PULL_DOWN_TO_REFRESH);
             return true;
         }
         if (id == R.id.stylePullToRefresh) {
             PullToRefreshHeader head = new PullToRefreshHeader();
+            PullToLoadMoreFooter footer = new PullToLoadMoreFooter();
             swipeLayout.setHeader(head);
-
+            swipeLayout.setFooter(footer);
+            swipeLayout.setMode(SwipeToRefreshLayout.MODE_BOTH);
             return true;
         }
         if (id == R.id.stylePhoenix) {
             PhoenixHeader head = new PhoenixHeader();
             swipeLayout.setHeader(head);
+            swipeLayout.setMode(SwipeToRefreshLayout.MODE_PULL_DOWN_TO_REFRESH);
             return true;
         }
         return super.onOptionsItemSelected(item);
