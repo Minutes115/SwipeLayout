@@ -118,8 +118,9 @@ public class MaterialFooter extends LinearLayout implements com.minutes.swipelay
     }
 
     @Override
-    public void onTouchMove(SwipeLayout parent, int delta) {
+    public boolean onTouchMove(SwipeLayout parent, int delta, int offset) {
         parent.childScrollY(this, delta);
+        return false;
     }
 
     @Override
@@ -144,7 +145,7 @@ public class MaterialFooter extends LinearLayout implements com.minutes.swipelay
     }
 
     @Override
-    public void pullOffset(SwipeLayout parent, int offset, int distance) {
+    public void scrollOffset(SwipeLayout parent, int offset, int distance) {
         float percent = Math.min(1f, (distance / refreshHeight));
 
         mDrawable.setAlpha((int) (255 * percent));

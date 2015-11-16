@@ -1,6 +1,7 @@
 package com.minutes.swipelayout.temp;
 
 import android.graphics.Rect;
+import android.view.MotionEvent;
 
 /**
  * <p>Description  : ScrollerHelper.</p>
@@ -18,6 +19,7 @@ public class ScrollHelper{
     private float mCurrDeltaY;
     private int mCurrOffsetY;
     private int mLastOffsetY;
+    private MotionEvent mInitialEvent;
 
     private Rect mContentRect = new Rect();
     private Rect mHeaderRect = new Rect();
@@ -63,10 +65,18 @@ public class ScrollHelper{
     /**
      * 设置初始化 y 坐标
      */
-    public void setInitialY(float initialY) {
-        this.mInitialY   = initialY;
-        this.mCurrY      = initialY;
-        this.mLastY      = initialY;
+    public void setInitialEvent(MotionEvent event) {
+        this.mInitialEvent = event;
+        this.mInitialY   = event.getY();
+        this.mCurrY      = event.getY();
+        this.mLastY      = event.getY();
+    }
+
+    /**
+     * 获取初始化 Event
+     */
+    public MotionEvent getInitialEvent(){
+        return mInitialEvent;
     }
 
     /**

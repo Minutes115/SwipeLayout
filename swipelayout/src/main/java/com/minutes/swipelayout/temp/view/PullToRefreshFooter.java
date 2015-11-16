@@ -218,9 +218,10 @@ public class PullToRefreshFooter extends LinearLayout implements com.minutes.swi
     }
 
     @Override
-    public void onTouchMove(SwipeLayout parent, int delta) {
+    public boolean onTouchMove(SwipeLayout parent, int delta, int offset) {
         parent.contentScrollY(delta);
         parent.childScrollY(this, delta);
+        return false;
     }
 
     @Override
@@ -245,7 +246,7 @@ public class PullToRefreshFooter extends LinearLayout implements com.minutes.swi
     }
 
     @Override
-    public void pullOffset(SwipeLayout parent, int offset, int distance) {
+    public void scrollOffset(SwipeLayout parent, int offset, int distance) {
         if (canDoRefresh(parent, distance)) {
             setState(RELEASE);
         } else {

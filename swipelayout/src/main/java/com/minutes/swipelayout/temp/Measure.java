@@ -7,7 +7,7 @@ package com.minutes.swipelayout.temp;
  * <p>Date         : 15/11/13.</p>
  * <p>Time         : 下午1:52.</p>
  */
-public class Measure {
+public final class Measure {
     public final int height;
     public final int width;
 

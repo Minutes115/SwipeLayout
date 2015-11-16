@@ -49,6 +49,8 @@ public class SwipeLayout extends ViewGroup{
     private ScrollerImpl mScroller;
     private boolean mContentScrollable;
 
+    private int mAnimationDuration = MAX_OFFSET_ANIMATION_DURATION;
+
     private SwipeLayoutRefreshListener mListener;
 
     public SwipeLayout(Context context) {
@@ -237,7 +239,7 @@ public class SwipeLayout extends ViewGroup{
             case MotionEvent.ACTION_DOWN:{
                 isDragging = false;
                 mContentScrollable = false;
-                mScrollerHelper.setInitialY(ev.getY());
+                mScrollerHelper.setInitialEvent(ev);
             } break;
             case MotionEvent.ACTION_MOVE:{
                 float delta = ev.getY() - mScrollerHelper.getInitialY();
@@ -286,15 +288,22 @@ public class SwipeLayout extends ViewGroup{
             } break;
             case MotionEvent.ACTION_MOVE:{
                 mScrollerHelper.moveY(event.getY());
-                float delta = event.getY() - mScrollerHelper.getInitialY();
+                float currDelta = mScrollerHelper.getCurrDeltaY();
+                float delta = (mScrollerHelper.getCurrOffsetY() + currDelta);
                 if (delta < 0 && mDirection == PULL_DIRECTION_DOWN){
                     return false;
                 }
                 if (delta > 0 && mDirection == PULL_DIRECTION_UP){
                     return false;
                 }
+                if (delta == 0){
+                    MotionEvent ev = mScrollerHelper.getInitialEvent();
+                    if (ev != null){
+                        return super.dispatchTouchEvent(MotionEvent.obtain(ev));
+                    }
+                }
 
-                move((int) mScrollerHelper.getCurrDeltaY());
+                move((int) currDelta);
 
             } break;
             case MotionEvent.ACTION_UP:
@@ -311,15 +320,17 @@ public class SwipeLayout extends ViewGroup{
      */
     private void move(int delta){
         int currOffset = mScrollerHelper.getCurrOffsetY() + delta;
-        mScrollerHelper.setCurrOffsetY(currOffset);
-
+        int absCurrOffset = Math.abs(currOffset);
+        boolean handle = false;
         if (mHeaderView != null && mDirection == PULL_DIRECTION_DOWN){
-            mHeaderView.onTouchMove(this, delta);
+            handle = mHeaderView.onTouchMove(this, delta, absCurrOffset);
         }
         if (mFooterView != null && mDirection == PULL_DIRECTION_UP){
-            mFooterView.onTouchMove(this, delta);
+            handle = mFooterView.onTouchMove(this, delta, absCurrOffset);
         }
-
+        if (!handle){
+            mScrollerHelper.setCurrOffsetY(currOffset);
+        }
     }
 
     private ILoadLayout convert(View view){
@@ -353,6 +364,13 @@ public class SwipeLayout extends ViewGroup{
     }
 
     /**
+     * Animation duration
+     */
+    public void setAnimationDuration(int duration){
+        this.mAnimationDuration = duration;
+    }
+
+    /**
      * mContent to font
      */
     public void bringContentViewToFont(){
@@ -370,7 +388,7 @@ public class SwipeLayout extends ViewGroup{
 
     /**
      * 偏移 child
-     * 在没开始刷新的时候会触发 {@link ILoadLayout#pullOffset(SwipeLayout, int, int)}
+     * 在没开始刷新的时候会触发 {@link ILoadLayout#scrollOffset(SwipeLayout, int, int)}
      *
      * @param child     target view
      * @param offset    offset
@@ -378,11 +396,9 @@ public class SwipeLayout extends ViewGroup{
     public void childScrollY(View child, int offset){
         if (child != null && canOffsetTopAndBottom()){
             child.offsetTopAndBottom(offset);
-            if (!isRefreshing){
-                ILoadLayout iLoadLayout = ILoadLayout();
-                if (iLoadLayout != null){
-                    iLoadLayout.pullOffset(this, offset, mScrollerHelper.getAbsCurrOffsetY());
-                }
+            ILoadLayout iLoadLayout = ILoadLayout();
+            if (!isRefreshing && iLoadLayout != null) {
+                iLoadLayout.scrollOffset(this, offset, mScrollerHelper.getAbsCurrOffsetY());
             }
             invalidate();
         }
@@ -390,7 +406,7 @@ public class SwipeLayout extends ViewGroup{
 
     /**
      * 偏移 {@link #mContentView}
-     * 在没开始刷新的时候会触发 {@link ILoadLayout#pullOffset(SwipeLayout, int, int)}
+     * 在没开始刷新的时候会触发 {@link ILoadLayout#scrollOffset(SwipeLayout, int, int)}
      *
      * @param offset    offset
      */
@@ -398,11 +414,9 @@ public class SwipeLayout extends ViewGroup{
         if (mContentView != null) {
             mContentScrollable = true;
             mContentView.offsetTopAndBottom(offset);
-            if (!isRefreshing){
-                ILoadLayout iLoadLayout = ILoadLayout();
-                if (iLoadLayout != null){
-                    iLoadLayout.pullOffset(this, offset, mScrollerHelper.getAbsCurrOffsetY());
-                }
+            ILoadLayout iLoadLayout = ILoadLayout();
+            if (!isRefreshing && iLoadLayout != null) {
+                iLoadLayout.scrollOffset(this, offset, mScrollerHelper.getAbsCurrOffsetY());
             }
             invalidate();
         }
@@ -428,7 +442,7 @@ public class SwipeLayout extends ViewGroup{
             }
             isRefreshing = true;
             loadLayout.startRefreshing(SwipeLayout.this);
-            mScroller.startScroll(offset, MAX_OFFSET_ANIMATION_DURATION);
+            mScroller.startScroll(offset, mAnimationDuration);
 
         } else {
             refreshComplete();
@@ -461,10 +475,14 @@ public class SwipeLayout extends ViewGroup{
         mDirection = PULL_DIRECTION_DOWN;
         final ILoadLayout loadLayout = mHeaderView;
         final int refreshHeight = loadLayout.refreshHeight();
-        isRefreshing = true;
-        doListenerPullToRefresh();
-        loadLayout.startRefreshing(SwipeLayout.this);
-        mScroller.startScroll(refreshHeight, MAX_OFFSET_ANIMATION_DURATION);
+        mScroller.startScroll(refreshHeight, mAnimationDuration, new ScrollListener() {
+            @Override
+            public void finish() {
+                doListenerPullToRefresh();
+                isRefreshing = true;
+                loadLayout.startRefreshing(SwipeLayout.this);
+            }
+        });
     }
 
     /**
@@ -488,7 +506,7 @@ public class SwipeLayout extends ViewGroup{
             offset = -offset;
         }
 
-        mScroller.startScroll(offset, MAX_OFFSET_ANIMATION_DURATION, new ScrollListener() {
+        mScroller.startScroll(offset, mAnimationDuration, new ScrollListener() {
             @Override
             public void finish() {
                 isRefreshing = false;
@@ -555,26 +573,6 @@ public class SwipeLayout extends ViewGroup{
      */
     private boolean isILoadLayout(View view){
         return view != null && view instanceof ILoadLayout;
-    }
-
-    /**
-     * 设置滑动模式{@link ScrollMode}
-     */
-    public void setScrollMode(@ScrollMode.Mode int scrollMode){
-//        this.mScrollMode = scrollMode;
-//        if (mScrollMode == ScrollMode.SCROLL_FONT){
-//            if (mHeaderView != null){
-//                convert(mHeaderView).bringToFront();
-//            }
-//            if (mFooterView != null){
-//                convert(mFooterView).bringToFront();
-//            }
-//        }
-//        else {
-//            if (mContentView != null){
-//                mContentView.bringToFront();
-//            }
-//        }
     }
 
     /**
