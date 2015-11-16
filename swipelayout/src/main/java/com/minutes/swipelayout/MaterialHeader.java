@@ -37,6 +37,7 @@ public class MaterialHeader implements ILoadLayout {
 
     };
 
+    private int height;
     private View mLoadView;
     private SmoothTranslationYHelper runnable;
 
@@ -47,45 +48,45 @@ public class MaterialHeader implements ILoadLayout {
 
     @Override
     public int refreshHeight() {
-        return 220;
+        return height;
     }
 
     @Override
     public void onAttach(SwipeToRefreshLayout layout) {
         Context context = layout.getContext();
+        if (height == 0) {
+            height = SwipeToRefreshLayout.dip2Px(context, 60);
+        }
         if (mLoadView == null) {
             //箭头翻转动画
             mLoadView = new LinearLayout(layout.getContext());
-            ((LinearLayout)mLoadView).setGravity(Gravity.CENTER);
+            ((LinearLayout) mLoadView).setGravity(Gravity.CENTER);
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.MarginLayoutParams.MATCH_PARENT,
                                                                        refreshHeight());
-//            lp.gravity = Gravity.TOP;
+            lp.gravity = Gravity.TOP;
             mLoadView.setLayoutParams(lp);
 
             drawable = new MaterialProgressDrawable(context, mLoadView);
             drawable.setCallback(mLoadView);
 
             CircleImageView circleImageView = new CircleImageView(context,
-                                                              CIRCLE_BG_LIGHT,
-                                                              CIRCLE_DIAMETER / 2);
+                                                                  CIRCLE_BG_LIGHT,
+                                                                  CIRCLE_DIAMETER / 2);
             circleImageView.setImageDrawable(drawable);
             circleImageView.setVisibility(View.VISIBLE);
 
-            ((LinearLayout)mLoadView).addView(circleImageView);
+            ((LinearLayout) mLoadView).addView(circleImageView);
             layout.addView(mLoadView);
         }
     }
 
     @Override
-    public void onLayout(SwipeToRefreshLayout layout,
-                         boolean changed,
-                         float offset,
-                         int left,
-                         int top,
-                         int right,
-                         int bottom) {
+    public void onLayout(SwipeToRefreshLayout layout,boolean changed, float offset,int left,int top, int right, int bottom) {
         if (mLoadView != null) {
-            mLoadView.layout(left, 0 - refreshHeight(), right, 0);
+            mLoadView.layout(mLoadView.getLeft(),
+                             mLoadView.getTop() - refreshHeight(),
+                             mLoadView.getRight(),
+                             mLoadView.getBottom() - refreshHeight());
             mLoadView.bringToFront();
         }
     }
@@ -97,18 +98,7 @@ public class MaterialHeader implements ILoadLayout {
 
     @Override
     public void onDragEvent(SwipeToRefreshLayout swipeToRefreshLayout, float offset) {
-        float percent = Math.min(1f, offset / 220);
-
-        drawable.setAlpha((int) (255 * percent));
-        drawable.showArrow(true);
-
-        float strokeStart = ((percent) * .8f);
-        drawable.setStartEndTrim(0f, Math.min(0.8f, strokeStart));
-        drawable.setArrowScale(Math.min(1f, percent));
-
-        // magic
-        float rotation = (-0.25f + .4f * percent + percent * 2) * .5f;
-        drawable.setProgressRotation(rotation);
+        animation(offset);
 
         //移动的效果在这里
         View v = getLoadView();
@@ -117,6 +107,14 @@ public class MaterialHeader implements ILoadLayout {
 
     @Override
     public void onOverDragging(SwipeToRefreshLayout swipeToRefreshLayout, float offset) {
+        animation(offset);
+
+        //移动的效果在这里
+        View v = getLoadView();
+        ViewCompat.setTranslationY(v, offset);
+    }
+
+    private void animation(float offset) {
         float percent = Math.min(1f, offset / 220);
 
         drawable.setAlpha((int) (255 * percent));
@@ -129,40 +127,30 @@ public class MaterialHeader implements ILoadLayout {
         // magic
         float rotation = (-0.25f + .4f * percent + percent * 2) * .5f;
         drawable.setProgressRotation(rotation);
-
-        //移动的效果在这里
-        View v = getLoadView();
-        ViewCompat.setTranslationY(v, offset);
     }
 
     @Override
     public void onRefreshing(final SwipeToRefreshLayout strl) {
         drawable.start();
 
-        if (runnable != null) {
-            runnable.stop();
-        }
         View v = getLoadView();
-        runnable = new SmoothTranslationYHelper(v,
-                                                (int) ViewCompat.getY(v),
-                                                refreshHeight(),
-                                                null);
-        strl.post(runnable);
+        smoothScroll(v, ViewCompat.getY(v), refreshHeight());
     }
 
     @Override
     public void stopRefresh(SwipeToRefreshLayout strl) {
         drawable.stop();
 
+        View v = getLoadView();
+        smoothScroll(v, (int) ViewCompat.getY(v), 0);
+    }
+
+    private void smoothScroll(View view, float fromScrollY, float toScrollY) {
         if (runnable != null) {
             runnable.stop();
         }
-        View v = getLoadView();
-        runnable = new SmoothTranslationYHelper(v,
-                                                (int) ViewCompat.getY(v),
-                                                0,
-                                                null);
-        strl.post(runnable);
+        runnable = new SmoothTranslationYHelper(view, (int) fromScrollY, (int) toScrollY);
+        view.post(runnable);
     }
 
 }

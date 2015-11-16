@@ -36,8 +36,10 @@ public class PullToLoadMoreFooter implements ILoadLayout {
     private Animation mRotateUpAnimation;
     private Animation mRotateDownAnimation;
 
+    private int height;
     private View mLoadView;
-    private SmoothScrollHelper runnable;
+    private SmoothScrollHelper scrollHelper;
+    private SmoothTranslationYHelper translationYHelper;
 
     /**
      * 这里提供动画箭头图片 如果要替换箭头直接在此方法中获取Drawable或者在HeaderView中设置
@@ -86,12 +88,15 @@ public class PullToLoadMoreFooter implements ILoadLayout {
 
     @Override
     public int refreshHeight() {
-        return 220;
+        return height;
     }
 
     @Override
     public void onAttach(SwipeToRefreshLayout layout) {
         Context context = layout.getContext();
+        if (height == 0){
+            height = SwipeToRefreshLayout.dip2Px(context, 60);
+        }
         if (mLoadView == null) {
             //箭头翻转动画
             mRotateUpAnimation = new RotateAnimation(0,
@@ -178,14 +183,7 @@ public class PullToLoadMoreFooter implements ILoadLayout {
         arrow.setVisibility(View.GONE);
         progress.setVisibility(View.VISIBLE);
 
-        if (runnable != null) {
-            runnable.stop();
-        }
-        runnable = new SmoothScrollHelper(strl,
-                                          strl.getScrollY(),
-                                          refreshHeight(),
-                                          null);
-        strl.post(runnable);
+        smoothScroll(strl, strl.getScrollY(), refreshHeight());
     }
 
     @Override
@@ -194,13 +192,14 @@ public class PullToLoadMoreFooter implements ILoadLayout {
         arrow.setVisibility(View.GONE);
         progress.setVisibility(View.GONE);
 
-        if (runnable != null) {
-            runnable.stop();
+        smoothScroll(strl, strl.getScrollY(), 0);
+    }
+
+    private void smoothScroll(View view, float fromScrollY, float toScrollY) {
+        if (scrollHelper != null) {
+            scrollHelper.stop();
         }
-        runnable = new SmoothScrollHelper(strl,
-                                          strl.getScrollY(),
-                                          0,
-                                          null);
-        strl.post(runnable);
+        scrollHelper = new SmoothScrollHelper(view, (int) fromScrollY, (int) toScrollY);
+        view.post(scrollHelper);
     }
 }

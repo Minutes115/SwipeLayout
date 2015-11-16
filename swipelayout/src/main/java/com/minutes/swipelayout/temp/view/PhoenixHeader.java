@@ -64,7 +64,7 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
 
     private void init(){
         mTotalDragDistance = convertDpToPixel(getContext(), 100);
-        maxDistance = (int) (mTotalDragDistance + 20);
+        maxDistance = convertDpToPixel(getContext(), 120);
         sunRefreshView = new SunRefreshView(getContext());
 
         ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, maxDistance);
@@ -112,11 +112,12 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
     }
 
     @Override
-    public void onTouchMove(SwipeLayout parent, int delta) {
-        if (parent.currContentViewOffset() > maxDistance){
-            return;
+    public boolean onTouchMove(SwipeLayout parent, int delta, int offset) {
+        if (offset >= maxDistance){
+            return true;
         }
         parent.contentScrollY(delta);
+        return false;
     }
 
     @Override
@@ -131,6 +132,7 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
 
     @Override
     public void startRefreshing(final SwipeLayout parent) {
+        parent.setAnimationDuration(1400);
         sunRefreshView.start();
         postDelayed(new Runnable() {
             @Override
@@ -141,7 +143,7 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
     }
 
     @Override
-    public void pullOffset(SwipeLayout parent, int delta, int offset) {
+    public void scrollOffset(SwipeLayout parent, int delta, int offset) {
         float percent = Math.min(1f, offset / mTotalDragDistance);
         sunRefreshView.setPercent(percent, true);
         sunRefreshView.offsetTopAndBottom(delta);

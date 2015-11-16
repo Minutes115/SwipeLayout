@@ -117,8 +117,9 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     }
 
     @Override
-    public void onTouchMove(SwipeLayout parent, int delta) {
+    public boolean onTouchMove(SwipeLayout parent, int delta, int offset) {
         parent.childScrollY(this, delta);
+        return false;
     }
 
     @Override
@@ -129,6 +130,19 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     @Override
     public boolean canDoRefresh(SwipeLayout parent, int pullDistance) {
         return pullDistance > refreshHeight;
+    }
+
+    private void setDrawablePercent(float percent){
+        mDrawable.setAlpha((int) (255 * percent));
+        mDrawable.showArrow(true);
+
+        float strokeStart = ((percent) * .8f);
+        mDrawable.setStartEndTrim(0f, Math.min(0.8f, strokeStart));
+        mDrawable.setArrowScale(Math.min(1f, percent));
+
+        // magic
+        float rotation = (-0.25f + .4f * percent + percent * 2) * .5f;
+        mDrawable.setProgressRotation(rotation);
     }
 
     @Override
@@ -143,20 +157,9 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     }
 
     @Override
-    public void pullOffset(SwipeLayout parent, int offset, int distance) {
+    public void scrollOffset(SwipeLayout parent, int offset, int distance) {
         float percent = Math.min(1f, (distance / refreshHeight));
-
-        mDrawable.setAlpha((int) (255 * percent));
-        mDrawable.showArrow(true);
-
-        float strokeStart = ((percent) * .8f);
-        mDrawable.setStartEndTrim(0f, Math.min(0.8f, strokeStart));
-        mDrawable.setArrowScale(Math.min(1f, percent));
-
-        // magic
-        float rotation = (-0.25f + .4f * percent + percent * 2) * .5f;
-        mDrawable.setProgressRotation(rotation);
-
+        setDrawablePercent(percent);
     }
 
     @Override

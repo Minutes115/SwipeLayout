@@ -55,7 +55,7 @@ public class PhoenixFooter extends PhoenixHeader{
     }
 
     @Override
-    public void pullOffset(SwipeLayout parent, int delta, int offset) {
+    public void scrollOffset(SwipeLayout parent, int delta, int offset) {
         float percent = Math.min(1f, offset / mTotalDragDistance);
         sunRefreshView.setPercent(percent, true);
         sunRefreshView.offsetTopAndBottom(-delta);
