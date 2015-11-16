@@ -81,13 +81,7 @@ public class MaterialHeader implements ILoadLayout {
     }
 
     @Override
-    public void onLayout(SwipeToRefreshLayout layout,
-                         boolean changed,
-                         float offset,
-                         int left,
-                         int top,
-                         int right,
-                         int bottom) {
+    public void onLayout(SwipeToRefreshLayout layout,boolean changed, float offset,int left,int top, int right, int bottom) {
         if (mLoadView != null) {
             mLoadView.layout(mLoadView.getLeft(),
                              mLoadView.getTop() - refreshHeight(),

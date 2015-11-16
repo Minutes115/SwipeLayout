@@ -57,7 +57,10 @@ public class PhoenixHeader implements ILoadLayout {
     @Override
     public void onLayout(SwipeToRefreshLayout layout, boolean changed, float offset, int left, int top, int right, int bottom) {
         if (mLoadView != null) {
-            mLoadView.layout(left, 0, right, refreshHeight());
+            mLoadView.layout(mLoadView.getLeft(),
+                             mLoadView.getTop(),
+                             mLoadView.getRight(),
+                             mLoadView.getTop() + refreshHeight());
             layout.getContentView().bringToFront();
         }
     }
