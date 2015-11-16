@@ -11,29 +11,38 @@ import android.view.animation.Interpolator;
  * Time: 16:17
  * Note: com.minutes.swipelayout
  */
-public class SmoothTranslationYHelper implements Runnable{
-    public static final long DURING = 300;
+public class SmoothTranslationYHelper implements Runnable {
+    public static final long DURING = 200;
 
     public static final int FPS = 60;
 
-    private Interpolator interpolator;
     private View target;
     private int fromY;
     private int toY;
     private int currentY;
 
-    private long startTime = System.currentTimeMillis();
+    private Interpolator interpolator = new DecelerateInterpolator();
+    private long startTime = -1;
     private boolean isContinue = true;
 
-    public SmoothTranslationYHelper(View target, int fromY, int toY, Interpolator interpolator) {
+
+    private OnScrollListener onScrollListener;
+    private OnFinishListener onFinishListener;
+
+    public void setOnScrollListener(OnScrollListener onScrollListener) {
+        this.onScrollListener = onScrollListener;
+    }
+
+    public void setOnFinishListener(OnFinishListener onFinishListener) {
+        this.onFinishListener = onFinishListener;
+    }
+
+
+    public SmoothTranslationYHelper(View target, int fromY, int toY) {
         this.target = target;
         this.currentY = toY - 1;
         this.fromY = fromY;
         this.toY = toY;
-        if (interpolator == null) {
-            interpolator = new DecelerateInterpolator();
-        }
-        this.interpolator = interpolator;
     }
 
     @Override
@@ -47,6 +56,9 @@ public class SmoothTranslationYHelper implements Runnable{
             int deltaY = Math.round((fromY - toY) * interpolator.getInterpolation(normalizedTime / 1000f));
             currentY = fromY - deltaY;
             ViewCompat.setTranslationY(target, currentY);
+            if (onScrollListener != null) {
+                onScrollListener.onScroll(currentY);
+            }
         }
         if (isContinue && currentY != toY) {
             target.postDelayed(this, 1000 / FPS);
@@ -58,6 +70,17 @@ public class SmoothTranslationYHelper implements Runnable{
     public void stop() {
         isContinue = false;
         target.removeCallbacks(this);
+        if (onFinishListener != null){
+            onFinishListener.onFinished();
+        }
+    }
+
+    interface OnScrollListener {
+        void onScroll(int y);
+    }
+
+    interface OnFinishListener {
+        void onFinished();
     }
 
 }

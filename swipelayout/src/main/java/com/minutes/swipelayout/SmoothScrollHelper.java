@@ -11,27 +11,34 @@ import android.view.animation.Interpolator;
  * Note: com.minutes.swipelayout
  */
 public class SmoothScrollHelper implements Runnable {
-    public static final long DURING = 300;
+    public static final long DURING = 200;
     public static final int FPS = 60;
 
-    private Interpolator interpolator;
     private View target;
-    private int fromY;
-    private int toY;
-    private int currentY;
+    private int fromScrollY;
+    private int toScrollY;
+    private int currentScrollY;
 
+    private Interpolator interpolator = new DecelerateInterpolator();
     private long startTime = -1;
     private boolean isContinue = true;
 
-    public SmoothScrollHelper(View target, int fromY, int toY, Interpolator interpolator) {
+    private OnScrollListener onScrollListener;
+    private OnFinishListener onFinishListener;
+
+    public void setOnScrollListener(OnScrollListener onScrollListener) {
+        this.onScrollListener = onScrollListener;
+    }
+
+    public void setOnFinishListener(OnFinishListener onFinishListener) {
+        this.onFinishListener = onFinishListener;
+    }
+
+    public SmoothScrollHelper(View target, int fromScrollY, int toScrollY) {
         this.target = target;
-        this.currentY = toY - 1;
-        this.fromY = fromY;
-        this.toY = toY;
-        if (interpolator == null) {
-            interpolator = new DecelerateInterpolator();
-        }
-        this.interpolator = interpolator;
+        this.currentScrollY = toScrollY - 1;
+        this.fromScrollY = fromScrollY;
+        this.toScrollY = toScrollY;
     }
 
     @Override
@@ -42,11 +49,14 @@ public class SmoothScrollHelper implements Runnable {
             long normalizedTime = (1000 * (System.currentTimeMillis() - startTime)) / DURING;
             normalizedTime = Math.max(Math.min(normalizedTime, 1000), 0);
 
-            int deltaY = Math.round((fromY - toY) * interpolator.getInterpolation(normalizedTime / 1000f));
-            currentY = fromY - deltaY;
-            target.scrollTo(0, currentY);
+            int deltaY = Math.round((fromScrollY - toScrollY) * interpolator.getInterpolation(normalizedTime / 1000f));
+            currentScrollY = fromScrollY - deltaY;
+            target.scrollTo(0, currentScrollY);
+            if (onScrollListener != null){
+                onScrollListener.onScroll(currentScrollY);
+            }
         }
-        if (isContinue && currentY != toY) {
+        if (isContinue && currentScrollY != toScrollY) {
             target.postDelayed(this, 1000 / FPS);
         } else {
             stop();
@@ -56,5 +66,17 @@ public class SmoothScrollHelper implements Runnable {
     public void stop() {
         isContinue = false;
         target.removeCallbacks(this);
+        if (onFinishListener != null){
+            onFinishListener.onFinished();
+        }
     }
+
+    interface OnScrollListener {
+        void onScroll(int scrollY);
+    }
+
+    interface OnFinishListener {
+        void onFinished();
+    }
+
 }
