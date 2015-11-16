@@ -44,8 +44,8 @@ public class PhoenixHeader implements ILoadLayout {
             lp.gravity = Gravity.TOP;
 
             ImageView imageView = new ImageView(context);
-            imageView.setImageResource(R.drawable.sun);
-            imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            imageView.setImageResource(R.drawable.sky);
+            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
             imageView.setLayoutParams(lp);
             imageView.setBackgroundColor(context.getResources().getColor(android.R.color.holo_red_dark));
 
