@@ -2,6 +2,7 @@ package com.minutes.swipelayout;
 
 import android.content.Context;
 import android.os.Build;
+import android.support.annotation.IntDef;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
@@ -12,6 +13,9 @@ import android.view.ViewConfiguration;
 import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
 import android.widget.FrameLayout;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
  * 2015/04/03 - 11:37
@@ -27,6 +31,12 @@ public class SwipeToRefreshLayout extends FrameLayout {
     public static final int MODE_PULL_UP_TO_REFRESH = 2;
     public static final int MODE_PULL_DOWN_TO_REFRESH = 3;
 
+    @IntDef({MODE_BOTH,MODE_NONE,MODE_PULL_UP_TO_REFRESH,MODE_PULL_DOWN_TO_REFRESH})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface Mode{}
+
+
+    @Mode
     private int mode = MODE_NONE;
 
     private int touchSlop;
@@ -56,14 +66,8 @@ public class SwipeToRefreshLayout extends FrameLayout {
      */
     private boolean isRefreshing;
 
-//    private ILoadLayout header = new PullToRefreshHeader();
-//    private ILoadLayout footer = new PullToLoadMoreFooter();
-
-    private ILoadLayout header = new PhoenixHeader();
+    private ILoadLayout header = null;
     private ILoadLayout footer = null;
-
-//    private ILoadLayout header = new MaterialHeader();
-//    private ILoadLayout footer = null;
 
     private SwipeToRefreshListener onRefreshListener;
 
@@ -87,7 +91,7 @@ public class SwipeToRefreshLayout extends FrameLayout {
         this.footer.onAttach(this);
     }
 
-    public void setMode(int mode) {
+    public void setMode(@Mode int mode) {
         this.mode = mode;
     }
 
@@ -160,81 +164,6 @@ public class SwipeToRefreshLayout extends FrameLayout {
             }
         });
     }
-
-//    @Override
-//    protected boolean checkLayoutParams(LayoutParams p) {
-//        return super.checkLayoutParams(p) && p instanceof MarginLayoutParams;
-//    }
-//
-//    @Override
-//    protected LayoutParams generateDefaultLayoutParams() {
-//        return new MarginLayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-//    }
-//
-//    @Override
-//    public LayoutParams generateLayoutParams(AttributeSet attrs) {
-//        return new MarginLayoutParams(getContext(), attrs);
-//    }
-//
-//    @Override
-//    protected LayoutParams generateLayoutParams(LayoutParams p) {
-//        return new MarginLayoutParams(p);
-//    }
-//
-//    @Override
-//    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-//        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-//        contentView = getContentView();
-//        if (contentView != null) {
-//            measureContentView(contentView, widthMeasureSpec, heightMeasureSpec);
-//        }
-////        if (header != null) {
-////            measureChildWithMargins(header.getLoadView(), widthMeasureSpec, 0, heightMeasureSpec, 0);
-////        }
-////        if (footer != null) {
-////            measureChildWithMargins(footer.getLoadView(), widthMeasureSpec, 0, heightMeasureSpec, 0);
-////        }
-//    }
-//
-//    private void measureContentView(View child, int parentWidthMeasureSpec, int parentHeightMeasureSpec) {
-//        final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
-//
-//        final int childWidthMeasureSpec = getChildMeasureSpec(
-//            parentWidthMeasureSpec,
-//            getPaddingLeft() + getPaddingRight(),
-//            lp.width
-//        );
-//
-//        final int childHeightMeasureSpec = getChildMeasureSpec(
-//            parentHeightMeasureSpec,
-//            getPaddingLeft() + getPaddingRight() + lp.leftMargin + lp.rightMargin,
-//            lp.height
-//        );
-//        child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
-//    }
-//
-//    @Override
-//    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-//        Log.e("SwipeToRefreshLayout","onLayout");
-//        int paddingLeft = getPaddingLeft();
-//        int paddingTop  = getPaddingTop();
-//        contentView = getContentView();
-//        if (contentView != null) {
-//            LayoutParams lp = contentView.getLayoutParams();
-//            final int left = paddingLeft;
-//            final int top = (int) (paddingTop);
-//            final int right = left + contentView.getMeasuredWidth();
-//            final int bottom = top + contentView.getMeasuredHeight();
-//            contentView.layout(left, top, right, bottom);
-//        }
-//        if (header != null) {
-//            header.onLayout(this, changed, offset, l, t, r, b);
-//        }
-//        if (footer != null) {
-//            footer.onLayout(this, changed, offset, l, t, r, b);
-//        }
-//    }
-
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
@@ -367,7 +296,10 @@ public class SwipeToRefreshLayout extends FrameLayout {
         if (action == MotionEvent.ACTION_MOVE) {
             if (isDragging) {
                 offset = (event.getY() - initialY) / FRICTION;
-                handleDragEvent(offset);
+                //往下拉动再往上拉动时如果不判断容易错乱
+                if ((offset > 0 && canChildPullDown()) || (offset < 0 && canChildPullUp())){
+                    handleDragEvent(offset);
+                }
             }
         }
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
@@ -466,6 +398,17 @@ public class SwipeToRefreshLayout extends FrameLayout {
         if (canChildPullUp() && footer != null) {
             footer.stopRefresh(this);
         }
+    }
+
+    /**
+     * dip转换为px
+     * @param context
+     * @param dip
+     * @return
+     */
+    public static int dip2Px(Context context, int dip){
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (dip * scale + 0.5f);
     }
 
 }
