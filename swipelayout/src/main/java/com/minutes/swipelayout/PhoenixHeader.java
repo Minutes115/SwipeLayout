@@ -1,8 +1,8 @@
 package com.minutes.swipelayout;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.support.v4.view.ViewCompat;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -17,9 +17,11 @@ import android.widget.ImageView;
 public class PhoenixHeader implements ILoadLayout {
     private static final String TAG = PhoenixHeader.class.getSimpleName();
 
-    private int height;
+    private int refreshHeight, viewHeight;
     private View mLoadView;
     private SmoothTranslationYHelper runnable;
+
+    private Drawable pullDrawable, releaseDrawable;
 
     @Override
     public View getLoadView() {
@@ -28,26 +30,25 @@ public class PhoenixHeader implements ILoadLayout {
 
     @Override
     public int refreshHeight() {
-        return height;
+        return refreshHeight;
     }
 
     @Override
     public void onAttach(SwipeToRefreshLayout layout) {
         Context context = layout.getContext();
-        if (height == 0) {
-            height = SwipeToRefreshLayout.dip2Px(context, 100);
-            Log.d(TAG,"refreshHeight = " + height);
+        if (refreshHeight == 0) {
+            refreshHeight = SwipeToRefreshLayout.dip2Px(context, 110);
+            viewHeight = refreshHeight + 60;
         }
         if (mLoadView == null) {
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.MarginLayoutParams.MATCH_PARENT,
-                                                                       refreshHeight());
+                                                                       viewHeight);
             lp.gravity = Gravity.TOP;
 
             ImageView imageView = new ImageView(context);
-            imageView.setImageResource(R.drawable.sky);
-            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+            imageView.setImageResource(R.drawable.phoenix_pull);
+            imageView.setScaleType(ImageView.ScaleType.CENTER);
             imageView.setLayoutParams(lp);
-            imageView.setBackgroundColor(context.getResources().getColor(android.R.color.holo_red_dark));
 
             mLoadView = imageView;
             layout.addView(mLoadView);
@@ -72,14 +73,26 @@ public class PhoenixHeader implements ILoadLayout {
 
     @Override
     public void onDragEvent(SwipeToRefreshLayout layout, float offset) {
-
+        if (pullDrawable == null) {
+            pullDrawable = layout.getContext().getResources().getDrawable(R.drawable.phoenix_pull);
+        }
+        ImageView view = (ImageView) getLoadView();
+        if (view.getDrawable() != pullDrawable) {
+            view.setImageDrawable(pullDrawable);
+        }
         ViewCompat.setTranslationY(layout.getContentView(), offset);
     }
 
     @Override
     public void onOverDragging(SwipeToRefreshLayout layout, float offset) {
-        if (Math.abs(offset) <= getLoadView().getHeight()) {
-
+        if (Math.abs(offset) <= viewHeight) {
+            if (releaseDrawable == null) {
+                releaseDrawable = layout.getContext().getResources().getDrawable(R.drawable.phoenix_release);
+            }
+            ImageView view = (ImageView) getLoadView();
+            if (view.getDrawable() != releaseDrawable) {
+                view.setImageDrawable(releaseDrawable);
+            }
             ViewCompat.setTranslationY(layout.getContentView(), offset);
         }
     }
