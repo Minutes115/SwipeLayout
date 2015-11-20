@@ -7,6 +7,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 /**
  * User: LiangLong
@@ -19,6 +20,8 @@ public class PhoenixHeader implements ILoadLayout {
 
     private int refreshHeight, viewHeight;
     private View mLoadView;
+    private ProgressBar refreshingBar;
+    private ImageView pullImageView;
     private SmoothTranslationYHelper runnable;
 
     private Drawable pullDrawable, releaseDrawable;
@@ -45,12 +48,11 @@ public class PhoenixHeader implements ILoadLayout {
                                                                        viewHeight);
             lp.gravity = Gravity.TOP;
 
-            ImageView imageView = new ImageView(context);
-            imageView.setImageResource(R.drawable.phoenix_pull);
-            imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setLayoutParams(lp);
+            mLoadView = View.inflate(context, R.layout.layout_phoenix, null);
+            mLoadView.setLayoutParams(lp);
+            refreshingBar = (ProgressBar) mLoadView.findViewById(R.id.pull_progressbar);
+            pullImageView = (ImageView) mLoadView.findViewById(R.id.pull_img);
 
-            mLoadView = imageView;
             layout.addView(mLoadView);
         }
     }
@@ -73,13 +75,18 @@ public class PhoenixHeader implements ILoadLayout {
 
     @Override
     public void onDragEvent(SwipeToRefreshLayout layout, float offset) {
+        if (!pullImageView.isShown()) {
+            pullImageView.setVisibility(View.VISIBLE);
+            refreshingBar.setVisibility(View.GONE);
+        }
         if (pullDrawable == null) {
             pullDrawable = layout.getContext().getResources().getDrawable(R.drawable.phoenix_pull);
         }
-        ImageView view = (ImageView) getLoadView();
+        ImageView view = pullImageView;
         if (view.getDrawable() != pullDrawable) {
             view.setImageDrawable(pullDrawable);
         }
+
         ViewCompat.setTranslationY(layout.getContentView(), offset);
     }
 
@@ -89,7 +96,7 @@ public class PhoenixHeader implements ILoadLayout {
             if (releaseDrawable == null) {
                 releaseDrawable = layout.getContext().getResources().getDrawable(R.drawable.phoenix_release);
             }
-            ImageView view = (ImageView) getLoadView();
+            ImageView view = pullImageView;
             if (view.getDrawable() != releaseDrawable) {
                 view.setImageDrawable(releaseDrawable);
             }
@@ -99,6 +106,10 @@ public class PhoenixHeader implements ILoadLayout {
 
     @Override
     public void onRefreshing(final SwipeToRefreshLayout strl) {
+        if (!refreshingBar.isShown()) {
+            refreshingBar.setVisibility(View.VISIBLE);
+            pullImageView.setVisibility(View.GONE);
+        }
 
         View v = strl.getContentView();
         smoothMove(v, ViewCompat.getY(v), refreshHeight());
@@ -106,6 +117,8 @@ public class PhoenixHeader implements ILoadLayout {
 
     @Override
     public void stopRefresh(SwipeToRefreshLayout strl) {
+        refreshingBar.setVisibility(View.GONE);
+        pullImageView.setVisibility(View.GONE);
 
         View v = strl.getContentView();
         smoothMove(v, ViewCompat.getY(v), 0);
