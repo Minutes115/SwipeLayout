@@ -236,7 +236,12 @@ public class SwipeToRefreshLayout extends FrameLayout {
             AbsListView av = (AbsListView) child;
             int count = av.getAdapter().getCount();
             View bottomView = av.getChildAt(av.getChildCount() - 1);
-            if (av.getLastVisiblePosition() == count - 1 && bottomView.getBottom() < av.getBottom()) {
+            if (count == 0 || bottomView == null){
+                return true;
+            }
+            if (av.getLastVisiblePosition() == count - 1
+                && bottomView.getBottom() <= av.getBottom())
+            {
                 return true;
             }
         } else {
