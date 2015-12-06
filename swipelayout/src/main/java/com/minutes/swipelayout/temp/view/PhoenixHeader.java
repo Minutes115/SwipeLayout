@@ -134,12 +134,6 @@ public class PhoenixHeader extends LinearLayout implements ILoadLayout {
     public void startRefreshing(final SwipeLayout parent) {
         parent.setAnimationDuration(1400);
         sunRefreshView.start();
-        postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                parent.setRefresh(false);
-            }
-        }, 2000);
     }
 
     @Override

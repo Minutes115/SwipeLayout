@@ -148,12 +148,6 @@ public class MaterialHeader extends LinearLayout implements com.minutes.swipelay
     @Override
     public void startRefreshing(final SwipeLayout parent) {
         mDrawable.start();
-        postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                parent.setRefresh(false);
-            }
-        }, 2000);
     }
 
     @Override

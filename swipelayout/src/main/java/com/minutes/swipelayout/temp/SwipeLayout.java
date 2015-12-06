@@ -78,7 +78,6 @@ public class SwipeLayout extends ViewGroup{
         mScrollerHelper = new ScrollHelper(FRICTION);
 
         touchSlop       = ViewConfiguration.get(getContext()).getScaledTouchSlop();
-
     }
 
     @Override protected boolean checkLayoutParams(LayoutParams p) {
@@ -205,23 +204,23 @@ public class SwipeLayout extends ViewGroup{
             final int top = paddingTop + lp.topMargin + (mContentScrollable ? offset : 0);
             final int right = left + mContentView.getMeasuredWidth();
             final int bottom = top + mContentView.getMeasuredHeight();
-            if (!isRefreshing){
+            if (!isRefreshing && !isDragging){
                 mScrollerHelper.setContentOnLayoutRect(left, top, right, bottom);
             }
             mContentView.layout(left, top, right, bottom);
         }
 
-        if (mHeaderView != null) {
+        if (mHeaderView != null && mDirection != PULL_DIRECTION_UP) {
             Layout layout = mHeaderView.onChildLayout(this, offset, l, t, r, b);
-            if (!isRefreshing) {
+            if (!isRefreshing && !isDragging) {
                 mScrollerHelper.setHeaderOnLayoutRect(layout.left, layout.top, layout.right, layout.bottom);
             }
         }
 
-        if (mFooterView != null){
+        if (mFooterView != null && mDirection != PULL_DIRECTION_DOWN){
             Layout layout = mFooterView.onChildLayout(this, offset, l, t, r, b);
 
-            if (!isRefreshing) {
+            if (!isRefreshing && !isDragging) {
                 mScrollerHelper.setFooterOnLayoutRect(layout.left, layout.top, layout.right, layout.bottom);
             }
         }
@@ -237,6 +236,9 @@ public class SwipeLayout extends ViewGroup{
         final int action = MotionEventCompat.getActionMasked(ev);
         switch (action){
             case MotionEvent.ACTION_DOWN:{
+                if (mScroller.isAutoRunning()){
+                    mScroller.interceptScroll();
+                }
                 isDragging = false;
                 mContentScrollable = false;
                 mScrollerHelper.setInitialEvent(ev);
@@ -290,17 +292,23 @@ public class SwipeLayout extends ViewGroup{
                 mScrollerHelper.moveY(event.getY());
                 float currDelta = mScrollerHelper.getCurrDeltaY();
                 float delta = (mScrollerHelper.getCurrOffsetY() + currDelta);
-                if (delta < 0 && mDirection == PULL_DIRECTION_DOWN){
-                    return false;
-                }
-                if (delta > 0 && mDirection == PULL_DIRECTION_UP){
-                    return false;
+
+                switch (mDirection){
+                    case PULL_DIRECTION_DOWN:
+                        if (delta < 0){
+                            return false;
+                        }
+                        break;
+                    case PULL_DIRECTION_UP:
+                        if (delta > 0) {
+                            return false;
+                        }
+                        break;
+                    default:
+                        break;
                 }
                 if (delta == 0){
-                    MotionEvent ev = mScrollerHelper.getInitialEvent();
-                    if (ev != null){
-                        return super.dispatchTouchEvent(MotionEvent.obtain(ev));
-                    }
+                    return false;
                 }
 
                 move((int) currDelta);
@@ -322,10 +330,10 @@ public class SwipeLayout extends ViewGroup{
         int currOffset = mScrollerHelper.getCurrOffsetY() + delta;
         int absCurrOffset = Math.abs(currOffset);
         boolean handle = false;
-        if (mHeaderView != null && mDirection == PULL_DIRECTION_DOWN){
+        if (mHeaderView != null && mDirection == PULL_DIRECTION_DOWN && canChildPullDown()){
             handle = mHeaderView.onTouchMove(this, delta, absCurrOffset);
         }
-        if (mFooterView != null && mDirection == PULL_DIRECTION_UP){
+        if (mFooterView != null && mDirection == PULL_DIRECTION_UP && canChildPullUp()){
             handle = mFooterView.onTouchMove(this, delta, absCurrOffset);
         }
         if (!handle){
@@ -435,14 +443,14 @@ public class SwipeLayout extends ViewGroup{
                 offset = -offset;
             }
 
+            isRefreshing = true;
+            loadLayout.startRefreshing(SwipeLayout.this);
+            mScroller.startScroll(offset, mAnimationDuration);
             if (mDirection == PULL_DIRECTION_DOWN){
                 doListenerPullToRefresh();
             } else {
                 doListenerLoadMore();
             }
-            isRefreshing = true;
-            loadLayout.startRefreshing(SwipeLayout.this);
-            mScroller.startScroll(offset, mAnimationDuration);
 
         } else {
             refreshComplete();
@@ -510,6 +518,7 @@ public class SwipeLayout extends ViewGroup{
             @Override
             public void finish() {
                 isRefreshing = false;
+                mDirection = PULL_DIRECTION_NON;
                 loadLayout.completeRefresh(SwipeLayout.this);
             }
         });
@@ -585,7 +594,7 @@ public class SwipeLayout extends ViewGroup{
         if (mHeaderView != null) {
             removeView(convert(mHeaderView));
         }
-        ViewGroup.LayoutParams lp = header.getLayoutParams();
+        LayoutParams lp = header.getLayoutParams();
         if (lp == null) {
             lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
             header.setLayoutParams(lp);
@@ -604,7 +613,7 @@ public class SwipeLayout extends ViewGroup{
         if (mFooterView != null){
             removeView(convert(mFooterView));
         }
-        ViewGroup.LayoutParams lp = footer.getLayoutParams();
+        LayoutParams lp = footer.getLayoutParams();
         if (lp == null) {
             lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
             footer.setLayoutParams(lp);
@@ -690,6 +699,10 @@ public class SwipeLayout extends ViewGroup{
          * @param listener  结束监听
          */
         public void startScroll(int distance, int duration, ScrollListener listener){
+            if (isDragging){
+                interceptScroll();
+                return;
+            }
             mScrollListener = listener;
             mLastY = 0;
             isAutoRunning = true;
