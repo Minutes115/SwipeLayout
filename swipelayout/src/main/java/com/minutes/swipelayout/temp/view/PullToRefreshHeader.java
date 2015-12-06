@@ -233,12 +233,6 @@ public class PullToRefreshHeader extends LinearLayout implements com.minutes.swi
     @Override
     public void startRefreshing(final SwipeLayout parent) {
         setState(REFRESHING);
-        postDelayed(new Runnable() {
-            @Override
-            public void run() {
-               parent.setRefresh(false);
-            }
-        }, 2000);
     }
 
     @Override

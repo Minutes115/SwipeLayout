@@ -12,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.minutes.swipelayout.temp.SwipeLayout;
+import com.minutes.swipelayout.temp.SwipeLayoutRefreshListener;
+import com.minutes.swipelayout.temp.view.LoadMoreTwo;
 import com.minutes.swipelayout.temp.view.MaterialFooter;
 import com.minutes.swipelayout.temp.view.MaterialHeader;
 import com.minutes.swipelayout.temp.view.PhoenixFooter;
@@ -33,7 +35,7 @@ public class TempTestActivity extends AppCompatActivity {
 
     final static List<String> list = new Vector<>();
     static {
-        for (int i = 0; i < 30; i++){
+        for (int i = 0; i < 5; i++){
             list.add("Test data " + i);
         }
     }
@@ -50,6 +52,32 @@ public class TempTestActivity extends AppCompatActivity {
         mRecyclerView.setAdapter(new DemoAdapter());
 
         swipeLayout = (SwipeLayout) findViewById(R.id.swipeLayout);
+        swipeLayout.setSwipeLayoutRefreshListener(new SwipeLayoutRefreshListener() {
+            @Override
+            public void pullToRefresh() {
+                swipeLayout.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        swipeLayout.setRefresh(false);
+                    }
+                }, 2000);
+            }
+
+            @Override
+            public void loadMore() {
+                swipeLayout.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        swipeLayout.setRefresh(false);
+                    }
+                }, 2000);
+            }
+        });
+
+        MaterialHeader header = new MaterialHeader(this);
+        swipeLayout.setHeaderView(header);
+
+        swipeLayout.setFooterView(new LoadMoreTwo(this));
 
     }
 
